@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>🥘 Küchen-Planer</title>
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet"/>
+
+<!-- ═══════════════════════════════════════════════════════════
+     🔧 FIREBASE KONFIGURATION – hier deine Werte eintragen!
+     Anleitung steht weiter unten im Kommentar-Block.
+════════════════════════════════════════════════════════════ -->
+<script>
+  const FIREBASE_CONFIG = {
+    apiKey:            "AIzaSyBvbTNaVVx-ZL_CrmLXdnZS3LQMtmPS0dw",
+    authDomain:        "essensplaner-c2c66.firebaseapp.com",
+    databaseURL:       "https://essensplaner-c2c66-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId:         "essensplaner-c2c66",
+    storageBucket:     "essensplaner-c2c66.firebasestorage.app",
+    messagingSenderId: "297144259770",
+    appId:             "1:297144259770:web:1dfcc15655aa00d64f5e83",
+    measurementId:     "G-5C2Y2G8XDP"
+  };
+</script>
+
+<style>
+:root {
+  --bg:       #faf7f2;
+  --bg2:      #f0e8dc;
+  --white:    #ffffff;
+  --border:   #e2d5c3;
+  --border2:  #c4b49a;
+  --text:     #2d2416;
+  --muted:    #a0886e;
+  --accent:   #c17f2e;
+  --accent-d: #a66c24;
+  --green:    #5a8a5a;
+  --red:      #c0392b;
+  --head-bg:  #2d2416;
+  --head-fg:  #faf7f2;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Crimson Text', Georgia, serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+/* ── Header ── */
+header { background: var(--head-bg); color: var(--head-fg); padding: 18px 24px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 12px rgba(0,0,0,.3); }
+.header-inner { max-width: 960px; margin: 0 auto; display: flex; align-items: baseline; gap: 12px; justify-content: space-between; }
+.header-inner h1 { font-family: 'DM Serif Display', serif; font-size: 1.7rem; font-weight: 400; letter-spacing: -.01em; }
+.header-inner .sub { font-size: .85rem; color: #a0886e; font-style: italic; }
+.sync-dot { width: 8px; height: 8px; border-radius: 50%; background: #888; display: inline-block; margin-right: 5px; transition: background .4s; }
+.sync-dot.ok { background: #5a8a5a; }
+.sync-dot.err { background: var(--red); }
+.sync-label { font-size: .78rem; color: #a0886e; }
+
+/* ── Setup overlay ── */
+#setup-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 999; display: flex; align-items: center; justify-content: center; padding: 16px; }
+.setup-box { background: var(--white); border-radius: 6px; padding: 32px; max-width: 560px; width: 100%; box-shadow: 0 24px 60px rgba(0,0,0,.3); }
+.setup-box h2 { font-family: 'DM Serif Display', serif; font-size: 1.6rem; font-weight: 400; margin-bottom: 8px; }
+.setup-box p { color: var(--muted); font-size: .95rem; line-height: 1.6; margin-bottom: 20px; }
+.setup-box ol { color: var(--muted); font-size: .9rem; line-height: 2; padding-left: 20px; margin-bottom: 20px; }
+.setup-box ol li b { color: var(--text); }
+.setup-btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 22px; background: var(--accent); color: white; border: none; border-radius: 3px; cursor: pointer; font-family: inherit; font-size: 1rem; }
+.setup-btn:hover { background: var(--accent-d); }
+code { background: var(--bg2); padding: 1px 6px; border-radius: 3px; font-size: .85rem; }
+
+/* ── Tabs ── */
+nav { background: var(--white); border-bottom: 1px solid var(--border); position: sticky; top: 56px; z-index: 90; }
+.nav-inner { max-width: 960px; margin: 0 auto; display: flex; overflow-x: auto; }
+.tab-btn { display: flex; align-items: center; gap: 7px; padding: 12px 18px; border: none; border-bottom: 2px solid transparent; background: transparent; cursor: pointer; font-family: inherit; font-size: .92rem; color: var(--muted); transition: all .2s; white-space: nowrap; }
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active { color: var(--text); border-bottom-color: var(--accent); font-weight: 600; }
+
+/* ── Main ── */
+main { max-width: 960px; margin: 0 auto; padding: 28px 16px 60px; }
+.section { display: none; }
+.section.active { display: block; }
+
+/* ── Week nav ── */
+.week-nav { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
+.week-pill { background: var(--bg2); padding: 4px 14px; border-radius: 20px; font-size: .85rem; color: var(--muted); }
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border: 1px solid var(--border2); background: transparent; cursor: pointer; font-family: inherit; font-size: .9rem; color: var(--text); border-radius: 2px; transition: all .2s; }
+.btn:hover { background: var(--bg2); border-color: var(--muted); }
+.btn.primary { background: var(--accent); color: white; border-color: var(--accent); }
+.btn.primary:hover { background: var(--accent-d); }
+.btn.success { background: var(--green); color: white; border-color: var(--green); }
+.btn.danger { background: var(--red); color: white; border-color: var(--red); }
+
+/* ── Meal table ── */
+.plan-table { width: 100%; border-collapse: collapse; min-width: 480px; }
+.plan-table th { padding: 10px 8px; text-align: left; color: var(--muted); font-weight: 600; font-size: .78rem; text-transform: uppercase; letter-spacing: .06em; border-bottom: 2px solid var(--border); }
+.plan-table td { padding: 10px 8px; vertical-align: top; border-bottom: 1px solid var(--border); }
+.plan-table tr:nth-child(even) td { background: #fdf9f5; }
+.day-label { font-weight: 600; font-size: .95rem; color: #5a4a38; width: 100px; }
+.meal-input { width: 100%; border: none; border-bottom: 1px solid var(--border); background: transparent; padding: 3px 2px; font-size: .95rem; color: var(--text); outline: none; font-family: inherit; transition: border-color .2s; }
+.meal-input:focus { border-bottom-color: var(--accent); }
+.table-wrap { overflow-x: auto; }
+
+/* ── Shopping ── */
+.shop-add { display: flex; gap: 8px; margin-bottom: 20px; }
+.text-input { flex: 1; border: 1px solid var(--border2); border-radius: 2px; padding: 9px 12px; background: var(--white); font-size: 1rem; outline: none; font-family: inherit; color: var(--text); transition: border-color .2s; }
+.text-input:focus { border-color: var(--accent); }
+.shop-list { background: var(--white); border: 1px solid var(--border); border-radius: 4px; padding: 0 16px; }
+.shop-item { display: flex; align-items: center; gap: 10px; padding: 11px 0; border-bottom: 1px solid var(--border); }
+.shop-item:last-child { border-bottom: none; }
+.check-btn { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--border2); background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .2s; flex-shrink: 0; }
+.check-btn.done { background: var(--green); border-color: var(--green); }
+.item-text { flex: 1; transition: all .2s; }
+.item-text.done { text-decoration: line-through; color: var(--muted); }
+.item-source { font-size: .75rem; color: var(--border2); }
+.del-btn { background: none; border: none; cursor: pointer; color: var(--border2); padding: 4px; line-height: 0; transition: color .2s; }
+.del-btn:hover { color: var(--red); }
+.empty-state { text-align: center; color: var(--muted); padding: 40px 0; font-style: italic; }
+
+/* ── Notes ── */
+.notes-ta { width: 100%; min-height: 380px; border: 1px solid var(--border2); border-radius: 4px; padding: 16px; background: var(--white); font-size: 1rem; line-height: 1.75; color: var(--text); outline: none; resize: vertical; font-family: inherit; transition: border-color .2s; }
+.notes-ta:focus { border-color: var(--accent); }
+
+/* ── Archive ── */
+.archive-list { display: flex; flex-direction: column; gap: 8px; }
+.archive-item { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; background: var(--white); border: 1px solid var(--border); border-radius: 4px; cursor: pointer; transition: all .2s; }
+.archive-item:hover { border-color: var(--accent); background: #fffbf6; }
+.archive-plan-table { width: 100%; border-collapse: collapse; }
+.archive-plan-table th { padding: 8px; text-align: left; color: var(--muted); font-size: .78rem; text-transform: uppercase; letter-spacing: .06em; border-bottom: 2px solid var(--border); }
+.archive-plan-table td { padding: 8px; border-bottom: 1px solid var(--border); font-size: .92rem; vertical-align: top; }
+.archive-plan-table tr:nth-child(even) td { background: #fdf9f5; }
+.back-link { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); cursor: pointer; font-size: .9rem; margin-bottom: 20px; border: none; background: none; font-family: inherit; }
+.back-link:hover { color: var(--text); }
+h2.section-title { font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 1.5rem; margin-bottom: 20px; }
+
+/* ── Toaster ── */
+#toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--head-bg); color: var(--head-fg); padding: 10px 22px; border-radius: 30px; font-size: .9rem; transition: transform .3s; z-index: 999; pointer-events: none; }
+#toast.show { transform: translateX(-50%) translateY(0); }
+
+/* ── SVG icons ── */
+svg.icon { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+</style>
+</head>
+<body>
+
+<!-- Setup overlay (shown when Firebase not configured) -->
+<div id="setup-overlay" style="display:none">
+  <div class="setup-box">
+    <h2>🔧 Firebase einrichten</h2>
+    <p>Für die gemeinsame Nutzung brauchst du ein kostenloses Firebase-Konto. Das dauert ca. 10 Minuten und ist dauerhaft kostenlos.</p>
+    <ol>
+      <li>Gehe zu <b>console.firebase.google.com</b> und melde dich mit Google an</li>
+      <li>Klicke <b>„Projekt hinzufügen"</b> → Namen eingeben → erstellen</li>
+      <li>Im Projekt: <b>„Realtime Database"</b> → erstellen → Region wählen → <b>Testmodus</b></li>
+      <li>Zahnrad ⚙️ → <b>Projekteinstellungen</b> → nach unten scrollen → <b>„App hinzufügen"</b> → Web-Icon &lt;/&gt;</li>
+      <li>App registrieren → du siehst ein <code>firebaseConfig</code> Objekt</li>
+      <li>Öffne diese HTML-Datei in einem Texteditor und trage die Werte oben im <code>FIREBASE_CONFIG</code> Block ein</li>
+      <li>Speichern → Datei neu laden → fertig! 🎉</li>
+    </ol>
+    <p>Die Datei dann einfach per <b>WhatsApp, E-Mail oder USB</b> an die andere Person schicken – beide tragen denselben Config-Code ein und sehen sofort alles.</p>
+    <button class="setup-btn" onclick="document.getElementById('setup-overlay').style.display='none'">Verstanden, ich richte es ein</button>
+  </div>
+</div>
+
+<header>
+  <div class="header-inner">
+    <div style="display:flex;align-items:baseline;gap:10px">
+      <h1>🥘 Küchen-Planer</h1>
+      <span class="sub">Wochenplaner für zwei</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px">
+      <span class="sync-dot" id="sync-dot"></span>
+      <span class="sync-label" id="sync-label">Verbinde…</span>
+    </div>
+  </div>
+</header>
+
+<nav>
+  <div class="nav-inner">
+    <button class="tab-btn active" onclick="showTab('plan',this)">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M8 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"/><path d="M8 2v6h6M10 13h4M10 17h4M8 13h.01M8 17h.01"/></svg>
+      Wochenplan
+    </button>
+    <button class="tab-btn" onclick="showTab('shop',this)">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18M16 10a4 4 0 01-8 0"/></svg>
+      Einkauf
+    </button>
+    <button class="tab-btn" onclick="showTab('notes',this)">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      Ideen
+    </button>
+    <button class="tab-btn" onclick="showTab('archive',this)">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg>
+      Archiv
+    </button>
+  </div>
+</nav>
+
+<main>
+
+  <!-- ── WOCHENPLAN ── -->
+  <section id="sec-plan" class="section active">
+    <div class="week-nav">
+      <button class="btn" onclick="changeWeek(-1)">← Vorherige</button>
+      <span class="week-pill" id="week-label">–</span>
+      <button class="btn" onclick="changeWeek(1)">Nächste →</button>
+      <button class="btn" id="today-btn" onclick="changeWeek(0,true)" style="display:none">Aktuelle Woche</button>
+      <button class="btn primary" onclick="savePlan()" id="save-btn">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2zM17 21v-8H7v8M7 3v5h8"/></svg>
+        Speichern
+      </button>
+    </div>
+    <div class="table-wrap">
+      <table class="plan-table" id="plan-table">
+        <thead>
+          <tr>
+            <th>Tag</th>
+            <th>Frühstück</th>
+            <th>Mittagessen</th>
+            <th>Abendessen</th>
+          </tr>
+        </thead>
+        <tbody id="plan-body"></tbody>
+      </table>
+    </div>
+    <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn" onclick="generateShopping()">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18M16 10a4 4 0 01-8 0"/></svg>
+        Einkaufsliste aus Plan erstellen
+      </button>
+    </div>
+  </section>
+
+  <!-- ── EINKAUF ── -->
+  <section id="sec-shop" class="section">
+    <h2 class="section-title">Einkaufsliste</h2>
+    <div class="shop-add">
+      <input class="text-input" id="shop-input" placeholder="Zutat hinzufügen…" onkeydown="if(event.key==='Enter')addShopItem()"/>
+      <button class="btn primary" onclick="addShopItem()">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+        Hinzufügen
+      </button>
+    </div>
+    <div class="shop-list" id="shop-list"></div>
+    <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap" id="shop-actions"></div>
+  </section>
+
+  <!-- ── IDEEN ── -->
+  <section id="sec-notes" class="section">
+    <h2 class="section-title">Ideen & Notizen</h2>
+    <p style="color:var(--muted);margin-bottom:16px;font-style:italic;font-size:.95rem">Sammle hier Rezeptideen und Inspirationen für kommende Wochen. Wird für beide synchronisiert.</p>
+    <textarea class="notes-ta" id="notes-ta" placeholder="🍝 Pasta Carbonara ausprobieren&#10;🥗 Mehr Salate unter der Woche&#10;🛒 Dosen-Tomaten kaufen&#10;…" oninput="scheduleNotesSave()"></textarea>
+    <div style="margin-top:6px;font-size:.8rem;color:var(--muted)" id="notes-status">Wird automatisch gespeichert.</div>
+  </section>
+
+  <!-- ── ARCHIV ── -->
+  <section id="sec-archive" class="section">
+    <div id="archive-list-view">
+      <h2 class="section-title">Archiv</h2>
+      <div class="archive-list" id="archive-list"></div>
+    </div>
+    <div id="archive-detail-view" style="display:none">
+      <button class="back-link" onclick="showArchiveList()">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+        Zurück
+      </button>
+      <h2 class="section-title" id="archive-detail-title"></h2>
+      <div class="table-wrap">
+        <table class="archive-plan-table">
+          <thead><tr><th>Tag</th><th>Frühstück</th><th>Mittagessen</th><th>Abendessen</th></tr></thead>
+          <tbody id="archive-detail-body"></tbody>
+        </table>
+      </div>
+      <div style="margin-top:16px">
+        <button class="btn primary" id="use-as-template-btn">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2M16 8h2a2 2 0 012 2v8a2 2 0 01-2 2h-8a2 2 0 01-2-2v-2"/></svg>
+          Als Vorlage für aktuelle Woche verwenden
+        </button>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<div id="toast">✓ Gespeichert</div>
+
+<!-- Firebase SDK -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, get, onValue, push, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+// ── Check if configured ──────────────────────────────────────
+const isConfigured = FIREBASE_CONFIG.apiKey !== "DEIN_API_KEY";
+const syncDot = document.getElementById('sync-dot');
+const syncLabel = document.getElementById('sync-label');
+
+function setSyncStatus(state) {
+  syncDot.className = 'sync-dot ' + (state==='ok'?'ok':state==='err'?'err':'');
+  syncLabel.textContent = state==='ok'?'Synchronisiert':state==='err'?'Offline – lokal':state==='saving'?'Speichert…':'Verbinde…';
+}
+
+if (!isConfigured) {
+  document.getElementById('setup-overlay').style.display = 'flex';
+  setSyncStatus('err');
+}
+
+// ── Init Firebase ────────────────────────────────────────────
+let db = null;
+if (isConfigured) {
+  try {
+    const app = initializeApp(FIREBASE_CONFIG);
+    db = getDatabase(app);
+    setSyncStatus('ok');
+  } catch(e) {
+    setSyncStatus('err');
+    console.error('Firebase init error:', e);
+  }
+}
+
+// ── Helpers ──────────────────────────────────────────────────
+const DAYS = ["Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag","Sonntag"];
+const MEALS = ["Frühstück","Mittagessen","Abendessen"];
+let weekOffset = 0;
+let currentPlan = {};
+let archiveKeys = [];
+let notesTimer = null;
+
+function getWeekKey(offset=0) {
+  const now = new Date();
+  const day = now.getDay()===0?7:now.getDay();
+  const mon = new Date(now);
+  mon.setDate(now.getDate()-day+1+offset*7);
+  return 'week-'+mon.toISOString().slice(0,10);
+}
+
+function getWeekLabel(key) {
+  const d = new Date(key.replace('week-',''));
+  const e = new Date(d); e.setDate(d.getDate()+6);
+  const f = x => x.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'});
+  return `${f(d)} – ${f(e)} ${e.getFullYear()}`;
+}
+
+function emptyPlan() {
+  const p={};
+  DAYS.forEach(d=>{p[d]={};MEALS.forEach(m=>{p[d][m]='';});});
+  return p;
+}
+
+// ── Firebase R/W ─────────────────────────────────────────────
+async function fbGet(path) {
+  if (!db) { try { return JSON.parse(localStorage.getItem(path)); } catch{ return null; } }
+  try { const snap = await get(ref(db, path)); return snap.exists()?snap.val():null; } catch { return null; }
+}
+async function fbSet(path, val) {
+  if (!db) { localStorage.setItem(path, JSON.stringify(val)); return; }
+  try { await set(ref(db, path), val); } catch(e) { console.error(e); }
+}
+function fbListen(path, cb) {
+  if (!db) return;
+  onValue(ref(db, path), snap => cb(snap.exists()?snap.val():null));
+}
+
+// ── Toast ────────────────────────────────────────────────────
+function toast(msg='✓ Gespeichert') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2000);
+}
+
+// ── Plan rendering ───────────────────────────────────────────
+function renderPlan(plan) {
+  const tbody = document.getElementById('plan-body');
+  tbody.innerHTML='';
+  DAYS.forEach(d=>{
+    const tr = document.createElement('tr');
+    const tdDay = document.createElement('td');
+    tdDay.className='day-label'; tdDay.textContent=d;
+    tr.appendChild(tdDay);
+    MEALS.forEach(m=>{
+      const td = document.createElement('td');
+      const inp = document.createElement('input');
+      inp.className='meal-input';
+      inp.type='text';
+      inp.placeholder='–';
+      inp.value=(plan&&plan[d]&&plan[d][m])||'';
+      inp.dataset.day=d; inp.dataset.meal=m;
+      inp.addEventListener('input', e=>{
+        if(!currentPlan[d]) currentPlan[d]={};
+        currentPlan[d][m]=e.target.value;
+      });
+      td.appendChild(inp); tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+}
+
+function loadWeek() {
+  const key = getWeekKey(weekOffset);
+  document.getElementById('week-label').textContent = getWeekLabel(key);
+  document.getElementById('today-btn').style.display = weekOffset!==0?'inline-flex':'none';
+  fbGet(key).then(data=>{
+    currentPlan = data ? JSON.parse(JSON.stringify(data)) : emptyPlan();
+    renderPlan(currentPlan);
+  });
+}
+
+window.changeWeek = function(dir, reset=false) {
+  if(reset) weekOffset=0; else weekOffset+=dir;
+  loadWeek();
+};
+
+window.savePlan = async function() {
+  setSyncStatus('saving');
+  const key = getWeekKey(weekOffset);
+  await fbSet(key, currentPlan);
+  // Update archive index
+  const idx = await fbGet('archive-index') || [];
+  if(!idx.includes(key)) {
+    const updated = [key,...idx].slice(0,52);
+    await fbSet('archive-index', updated);
+    archiveKeys = updated;
+  }
+  setSyncStatus('ok');
+  toast('✓ Wochenplan gespeichert!');
+  const btn = document.getElementById('save-btn');
+  btn.classList.add('success');
+  setTimeout(()=>btn.classList.remove('success'),1500);
+};
+
+// ── Shopping ─────────────────────────────────────────────────
+function renderShopping(items) {
+  const list = document.getElementById('shop-list');
+  const actions = document.getElementById('shop-actions');
+  list.innerHTML='';
+  if(!items||items.length===0){
+    list.innerHTML='<div class="empty-state">Noch keine Einträge. Füge Zutaten hinzu oder generiere die Liste aus dem Wochenplan.</div>';
+    actions.innerHTML='';
+    return;
+  }
+  items.forEach(item=>{
+    const div = document.createElement('div'); div.className='shop-item';
+    const cb = document.createElement('button');
+    cb.className='check-btn'+(item.done?' done':'');
+    cb.innerHTML=item.done?'<svg class="icon" style="width:13px;height:13px;stroke:white" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>':'';
+    cb.onclick=()=>toggleShop(item.id);
+    const textWrap=document.createElement('div'); textWrap.style.flex='1';
+    const text=document.createElement('span'); text.className='item-text'+(item.done?' done':'');
+    text.textContent=item.text; textWrap.appendChild(text);
+    if(item.source){const s=document.createElement('div');s.className='item-source';s.textContent=item.source;textWrap.appendChild(s);}
+    const del=document.createElement('button');del.className='del-btn';
+    del.innerHTML='<svg class="icon" style="width:16px;height:16px" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>';
+    del.onclick=()=>deleteShop(item.id);
+    div.appendChild(cb); div.appendChild(textWrap); div.appendChild(del);
+    list.appendChild(div);
+  });
+  const hasDone = items.some(i=>i.done);
+  actions.innerHTML='';
+  if(hasDone){
+    const b=document.createElement('button'); b.className='btn';
+    b.innerHTML='<svg class="icon" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg> Erledigte entfernen';
+    b.onclick=clearDoneItems; actions.appendChild(b);
+  }
+}
+
+let shopItems=[];
+fbListen('shopping', data=>{
+  shopItems = data ? Object.entries(data).map(([id,v])=>({id,...v})) : [];
+  renderShopping(shopItems);
+});
+
+async function toggleShop(id) {
+  const item = shopItems.find(i=>i.id===id);
+  if(!item) return;
+  await fbSet('shopping/'+id, {...item,id:undefined,done:!item.done});
+}
+async function deleteShop(id) {
+  if(!db){shopItems=shopItems.filter(i=>i.id!==id);renderShopping(shopItems);return;}
+  await remove(ref(db,'shopping/'+id));
+}
+async function clearDoneItems() {
+  for(const item of shopItems.filter(i=>i.done)) await deleteShop(item.id);
+}
+
+window.addShopItem = async function() {
+  const inp=document.getElementById('shop-input');
+  const text=inp.value.trim(); if(!text) return;
+  inp.value='';
+  if(!db){shopItems.push({id:Date.now().toString(),text,done:false});renderShopping(shopItems);return;}
+  await push(ref(db,'shopping'),{text,done:false});
+};
+
+window.generateShopping = async function() {
+  if(!currentPlan) return;
+  let added=0;
+  for(const d of DAYS){
+    for(const m of MEALS){
+      const v=(currentPlan[d]&&currentPlan[d][m]||'').trim();
+      if(!v) continue;
+      if(shopItems.some(i=>i.text===v)) continue;
+      if(!db){shopItems.push({id:Date.now()+Math.random()+'',text:v,done:false,source:d+' '+m});}
+      else await push(ref(db,'shopping'),{text:v,done:false,source:d+' '+m});
+      added++;
+    }
+  }
+  showTab('shop',document.querySelectorAll('.tab-btn')[1]);
+  toast(`✓ ${added} Einträge hinzugefügt`);
+};
+
+// ── Notes ────────────────────────────────────────────────────
+fbListen('notes', data=>{
+  const ta=document.getElementById('notes-ta');
+  if(ta!==document.activeElement) ta.value=data||'';
+});
+
+window.scheduleNotesSave = function() {
+  const status=document.getElementById('notes-status');
+  status.textContent='Nicht gespeichert…';
+  clearTimeout(notesTimer);
+  notesTimer=setTimeout(async()=>{
+    await fbSet('notes',document.getElementById('notes-ta').value);
+    status.textContent='Gespeichert ✓';
+    setTimeout(()=>status.textContent='Wird automatisch gespeichert.',2000);
+  },1000);
+};
+
+// ── Archive ──────────────────────────────────────────────────
+async function loadArchive() {
+  const idx = await fbGet('archive-index') || [];
+  archiveKeys=idx;
+  const list=document.getElementById('archive-list');
+  list.innerHTML='';
+  if(idx.length===0){
+    list.innerHTML='<div class="empty-state">Noch keine gespeicherten Wochen.</div>'; return;
+  }
+  idx.forEach(key=>{
+    const div=document.createElement('div'); div.className='archive-item';
+    div.innerHTML=`<span>📅 ${getWeekLabel(key)}</span><span style="color:var(--muted);font-size:.85rem">Ansehen →</span>`;
+    div.onclick=()=>showArchiveDetail(key);
+    list.appendChild(div);
+  });
+}
+
+async function showArchiveDetail(key) {
+  const data=await fbGet(key)||emptyPlan();
+  document.getElementById('archive-detail-title').textContent=getWeekLabel(key);
+  const tbody=document.getElementById('archive-detail-body');
+  tbody.innerHTML='';
+  DAYS.forEach(d=>{
+    const tr=document.createElement('tr');
+    const tdD=document.createElement('td'); tdD.style.fontWeight='600'; tdD.textContent=d; tr.appendChild(tdD);
+    MEALS.forEach(m=>{
+      const td=document.createElement('td');
+      td.style.color=(data[d]&&data[d][m])?'var(--text)':'var(--border2)';
+      td.textContent=(data[d]&&data[d][m])||'–'; tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+  document.getElementById('use-as-template-btn').onclick=()=>{
+    currentPlan=JSON.parse(JSON.stringify(data));
+    weekOffset=0;
+    renderPlan(currentPlan);
+    document.getElementById('week-label').textContent=getWeekLabel(getWeekKey(0));
+    showTab('plan',document.querySelectorAll('.tab-btn')[0]);
+    showArchiveList();
+    toast('✓ Als Vorlage übernommen');
+  };
+  document.getElementById('archive-list-view').style.display='none';
+  document.getElementById('archive-detail-view').style.display='block';
+}
+
+window.showArchiveList=function(){
+  document.getElementById('archive-list-view').style.display='block';
+  document.getElementById('archive-detail-view').style.display='none';
+};
+
+// ── Tabs ─────────────────────────────────────────────────────
+window.showTab = function(id, btn) {
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('sec-'+id).classList.add('active');
+  if(btn) btn.classList.add('active');
+  if(id==='archive') loadArchive();
+};
+
+// ── Init ─────────────────────────────────────────────────────
+loadWeek();
+</script>
+</body>
+</html>
