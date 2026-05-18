@@ -209,7 +209,6 @@ svg.icon { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-w
         <thead>
           <tr>
             <th>Tag</th>
-            <th>Frühstück</th>
             <th>Mittagessen</th>
             <th>Abendessen</th>
           </tr>
@@ -261,7 +260,7 @@ svg.icon { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-w
       <h2 class="section-title" id="archive-detail-title"></h2>
       <div class="table-wrap">
         <table class="archive-plan-table">
-          <thead><tr><th>Tag</th><th>Frühstück</th><th>Mittagessen</th><th>Abendessen</th></tr></thead>
+          <thead><tr><th>Tag</th><th>Mittagessen</th><th>Abendessen</th></tr></thead>
           <tbody id="archive-detail-body"></tbody>
         </table>
       </div>
@@ -313,7 +312,7 @@ if (isConfigured) {
 
 // ── Helpers ──────────────────────────────────────────────────
 const DAYS = ["Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag","Sonntag"];
-const MEALS = ["Frühstück","Mittagessen","Abendessen"];
+const MEALS = ["Mittagessen","Abendessen"];
 let weekOffset = 0;
 let currentPlan = {};
 let archiveKeys = [];
