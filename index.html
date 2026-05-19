@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>🥘 Küchen-Planer</title>
+<title>👨‍👩‍👧 Familienplaner</title>
 <link href="https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet"/>
 
 <!-- ═══════════════════════════════════════════════════════════
@@ -158,9 +158,28 @@ svg.icon { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-w
 
 <header>
   <div class="header-inner">
-    <div style="display:flex;align-items:baseline;gap:10px">
-      <h1>🥘 Küchen-Planer</h1>
-      <span class="sub">Wochenplaner für zwei</span>
+    <div style="display:flex;align-items:center;gap:14px">
+      <svg width="44" height="44" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Papa -->
+        <circle cx="10" cy="9" r="4" stroke="#faf7f2" stroke-width="1.8" fill="none"/>
+        <path d="M4 26 C4 18 16 18 16 26" stroke="#faf7f2" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+        <line x1="10" y1="13" x2="10" y2="22" stroke="#faf7f2" stroke-width="1.8" stroke-linecap="round"/>
+        <line x1="10" y1="16" x2="6" y2="20" stroke="#faf7f2" stroke-width="1.8" stroke-linecap="round"/>
+        <line x1="10" y1="16" x2="14" y2="20" stroke="#faf7f2" stroke-width="1.8" stroke-linecap="round"/>
+        <!-- Mama -->
+        <circle cx="22" cy="9" r="4" stroke="#faf7f2" stroke-width="1.8" fill="none"/>
+        <path d="M15 27 C15 19 29 19 29 27" stroke="#faf7f2" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+        <line x1="22" y1="13" x2="22" y2="22" stroke="#faf7f2" stroke-width="1.8" stroke-linecap="round"/>
+        <line x1="22" y1="16" x2="18" y2="20" stroke="#faf7f2" stroke-width="1.8" stroke-linecap="round"/>
+        <line x1="22" y1="16" x2="26" y2="20" stroke="#faf7f2" stroke-width="1.8" stroke-linecap="round"/>
+        <!-- Kind -->
+        <circle cx="34" cy="13" r="3" stroke="#faf7f2" stroke-width="1.8" fill="none"/>
+        <path d="M29 28 C29 22 39 22 39 28" stroke="#faf7f2" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+        <line x1="34" y1="16" x2="34" y2="23" stroke="#faf7f2" stroke-width="1.8" stroke-linecap="round"/>
+        <line x1="34" y1="18" x2="31" y2="21" stroke="#faf7f2" stroke-width="1.8" stroke-linecap="round"/>
+        <line x1="34" y1="18" x2="37" y2="21" stroke="#faf7f2" stroke-width="1.8" stroke-linecap="round"/>
+      </svg>
+      <h1>Familienplaner</h1>
     </div>
     <div style="display:flex;align-items:center;gap:6px">
       <span class="sync-dot" id="sync-dot"></span>
@@ -182,6 +201,10 @@ svg.icon { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-w
     <button class="tab-btn" onclick="showTab('notes',this)">
       <svg class="icon" viewBox="0 0 24 24"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
       Ideen
+    </button>
+    <button class="tab-btn" onclick="showTab('todo',this)">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      To-Do
     </button>
     <button class="tab-btn" onclick="showTab('archive',this)">
       <svg class="icon" viewBox="0 0 24 24"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg>
@@ -244,6 +267,20 @@ svg.icon { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-w
     <p style="color:var(--muted);margin-bottom:16px;font-style:italic;font-size:.95rem">Sammle hier Rezeptideen und Inspirationen für kommende Wochen. Wird für beide synchronisiert.</p>
     <textarea class="notes-ta" id="notes-ta" placeholder="🍝 Pasta Carbonara ausprobieren&#10;🥗 Mehr Salate unter der Woche&#10;🛒 Dosen-Tomaten kaufen&#10;…" oninput="scheduleNotesSave()"></textarea>
     <div style="margin-top:6px;font-size:.8rem;color:var(--muted)" id="notes-status">Wird automatisch gespeichert.</div>
+  </section>
+
+  <!-- ── TO-DO ── -->
+  <section id="sec-todo" class="section">
+    <h2 class="section-title">To-Do Liste</h2>
+    <div class="shop-add">
+      <input class="text-input" id="todo-input" placeholder="Aufgabe hinzufügen…" onkeydown="if(event.key==='Enter')addTodoItem()"/>
+      <button class="btn primary" onclick="addTodoItem()">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+        Hinzufügen
+      </button>
+    </div>
+    <div class="shop-list" id="todo-list"></div>
+    <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap" id="todo-actions"></div>
   </section>
 
   <!-- ── ARCHIV ── -->
@@ -515,6 +552,64 @@ window.scheduleNotesSave = function() {
     status.textContent='Gespeichert ✓';
     setTimeout(()=>status.textContent='Wird automatisch gespeichert.',2000);
   },1000);
+};
+
+// ── To-Do ────────────────────────────────────────────────────
+function renderTodo(items) {
+  const list = document.getElementById('todo-list');
+  const actions = document.getElementById('todo-actions');
+  list.innerHTML='';
+  if(!items||items.length===0){
+    list.innerHTML='<div class="empty-state">Noch keine Aufgaben. Füge deine erste To-Do hinzu!</div>';
+    actions.innerHTML=''; return;
+  }
+  items.forEach(item=>{
+    const div = document.createElement('div'); div.className='shop-item';
+    const cb = document.createElement('button');
+    cb.className='check-btn'+(item.done?' done':'');
+    cb.innerHTML=item.done?'<svg class="icon" style="width:13px;height:13px;stroke:white" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>':'';
+    cb.onclick=()=>toggleTodo(item.id);
+    const textWrap=document.createElement('div'); textWrap.style.flex='1';
+    const text=document.createElement('span'); text.className='item-text'+(item.done?' done':'');
+    text.textContent=item.text; textWrap.appendChild(text);
+    const del=document.createElement('button'); del.className='del-btn';
+    del.innerHTML='<svg class="icon" style="width:16px;height:16px" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>';
+    del.onclick=()=>deleteTodo(item.id);
+    div.appendChild(cb); div.appendChild(textWrap); div.appendChild(del);
+    list.appendChild(div);
+  });
+  const hasDone=items.some(i=>i.done);
+  actions.innerHTML='';
+  if(hasDone){
+    const b=document.createElement('button'); b.className='btn';
+    b.innerHTML='<svg class="icon" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg> Erledigte entfernen';
+    b.onclick=clearDoneTodos; actions.appendChild(b);
+  }
+}
+
+let todoItems=[];
+fbListen('todos', data=>{
+  todoItems = data ? Object.entries(data).map(([id,v])=>({id,...v})) : [];
+  renderTodo(todoItems);
+});
+
+async function toggleTodo(id) {
+  const item=todoItems.find(i=>i.id===id); if(!item) return;
+  await fbSet('todos/'+id, {...item,id:undefined,done:!item.done});
+}
+async function deleteTodo(id) {
+  if(!db){todoItems=todoItems.filter(i=>i.id!==id);renderTodo(todoItems);return;}
+  await remove(ref(db,'todos/'+id));
+}
+async function clearDoneTodos() {
+  for(const item of todoItems.filter(i=>i.done)) await deleteTodo(item.id);
+}
+window.addTodoItem = async function() {
+  const inp=document.getElementById('todo-input');
+  const text=inp.value.trim(); if(!text) return;
+  inp.value='';
+  if(!db){todoItems.push({id:Date.now().toString(),text,done:false});renderTodo(todoItems);return;}
+  await push(ref(db,'todos'),{text,done:false});
 };
 
 // ── Archive ──────────────────────────────────────────────────
