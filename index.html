@@ -115,6 +115,16 @@ main { max-width: 960px; margin: 0 auto; padding: 28px 16px 60px; }
 .notes-ta { width: 100%; min-height: 380px; border: 1px solid var(--border2); border-radius: 4px; padding: 16px; background: var(--white); font-size: 1rem; line-height: 1.75; color: var(--text); outline: none; resize: vertical; font-family: inherit; transition: border-color .2s; }
 .notes-ta:focus { border-color: var(--accent); }
 
+/* ── Milestones ── */
+.ms-add { display: flex; gap: 8px; margin-bottom: 22px; flex-wrap: wrap; }
+.ms-date { flex: 0 0 auto; max-width: 170px; }
+.ms-add .text-input:not(.ms-date) { min-width: 180px; }
+.ms-list { display: flex; flex-direction: column; gap: 10px; }
+.ms-year { font-family: 'DM Serif Display', serif; font-size: 1.1rem; color: var(--muted); margin: 14px 0 2px; }
+.ms-item { display: flex; gap: 14px; align-items: flex-start; background: var(--white); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 4px; padding: 13px 16px; }
+.ms-date-badge { flex: 0 0 auto; font-size: .8rem; color: var(--muted); letter-spacing: .02em; padding-top: 2px; min-width: 82px; }
+.ms-body { flex: 1; font-size: 1rem; line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
+
 /* ── Archive ── */
 .archive-list { display: flex; flex-direction: column; gap: 8px; }
 .archive-item { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; background: var(--white); border: 1px solid var(--border); border-radius: 4px; cursor: pointer; transition: all .2s; }
@@ -206,6 +216,10 @@ svg.icon { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-w
       <svg class="icon" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
       To-Do
     </button>
+    <button class="tab-btn" onclick="showTab('milestones',this)">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M12 2l2.4 5.2 5.6.7-4.2 3.9 1.1 5.6L12 14.7 7.1 17.4l1.1-5.6L4 7.9l5.6-.7z"/></svg>
+      Meilensteine
+    </button>
     <button class="tab-btn" onclick="showTab('archive',this)">
       <svg class="icon" viewBox="0 0 24 24"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg>
       Archiv
@@ -281,6 +295,21 @@ svg.icon { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-w
     </div>
     <div class="shop-list" id="todo-list"></div>
     <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap" id="todo-actions"></div>
+  </section>
+
+  <!-- ── MEILENSTEINE ── -->
+  <section id="sec-milestones" class="section">
+    <h2 class="section-title">Meilensteine & neue Wörter</h2>
+    <p style="color:var(--muted);margin-bottom:16px;font-style:italic;font-size:.95rem">Was gab's Neues? Erste Schritte, erste Wörter, Messungen, besondere Momente.</p>
+    <div class="ms-add">
+      <input class="text-input ms-date" type="date" id="ms-date"/>
+      <input class="text-input" id="ms-text" placeholder="Was ist passiert?" onkeydown="if(event.key==='Enter')addMilestone()"/>
+      <button class="btn primary" onclick="addMilestone()">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+        Eintragen
+      </button>
+    </div>
+    <div class="ms-list" id="ms-list"></div>
   </section>
 
   <!-- ── ARCHIV ── -->
@@ -611,6 +640,84 @@ window.addTodoItem = async function() {
   if(!db){todoItems.push({id:Date.now().toString(),text,done:false});renderTodo(todoItems);return;}
   await push(ref(db,'todos'),{text,done:false});
 };
+
+// ── Meilensteine ─────────────────────────────────────────────
+const MS_SEED = [
+  { date:'2026-05-29', text:'Erstes Eis (Pistazie) in Oetz' },
+  { date:'2026-05-30', text:'Erster kleiner Hüpfer, daheim' },
+  { date:'2026-06-02', text:'Erstes Mal Erdbeerfeld' },
+  { date:'2026-06-07', text:'Messung: 80 cm' }
+];
+
+function msFormatDate(iso) {
+  if(!iso) return '';
+  const d = new Date(iso+'T12:00:00');
+  if(isNaN(d)) return iso;
+  return d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'});
+}
+
+function renderMilestones(items) {
+  const list = document.getElementById('ms-list');
+  list.innerHTML='';
+  if(!items||items.length===0){
+    list.innerHTML='<div class="empty-state">Noch keine Einträge. Trage den ersten Meilenstein ein!</div>';
+    return;
+  }
+  const sorted = [...items].sort((a,b)=> (b.date||'').localeCompare(a.date||''));
+  let lastYear = null;
+  sorted.forEach(item=>{
+    const year = (item.date||'').slice(0,4);
+    if(year && year!==lastYear){
+      const h = document.createElement('div'); h.className='ms-year'; h.textContent=year;
+      list.appendChild(h); lastYear=year;
+    }
+    const div = document.createElement('div'); div.className='ms-item';
+    const badge = document.createElement('div'); badge.className='ms-date-badge';
+    badge.textContent = msFormatDate(item.date);
+    const body = document.createElement('div'); body.className='ms-body';
+    body.textContent = item.text;
+    const del = document.createElement('button'); del.className='del-btn';
+    del.innerHTML='<svg class="icon" style="width:16px;height:16px" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>';
+    del.onclick=()=>deleteMilestone(item.id);
+    div.appendChild(badge); div.appendChild(body); div.appendChild(del);
+    list.appendChild(div);
+  });
+}
+
+let msItems=[];
+fbListen('milestones', data=>{
+  msItems = data ? Object.entries(data).map(([id,v])=>({id,...v})) : [];
+  renderMilestones(msItems);
+});
+
+async function deleteMilestone(id) {
+  if(!db){msItems=msItems.filter(i=>i.id!==id);renderMilestones(msItems);return;}
+  await remove(ref(db,'milestones/'+id));
+}
+
+window.addMilestone = async function() {
+  const dEl=document.getElementById('ms-date'), tEl=document.getElementById('ms-text');
+  const date=dEl.value, text=tEl.value.trim();
+  if(!text){ toast('Bitte noch beschreiben, was passiert ist'); return; }
+  if(!date){ toast('Bitte noch ein Datum wählen'); return; }
+  dEl.value=''; tEl.value='';
+  if(!db){msItems.push({id:Date.now().toString(),date,text});renderMilestones(msItems);return;}
+  await push(ref(db,'milestones'),{date,text});
+  toast('✓ Eingetragen');
+};
+
+// Einmalige Übernahme der Einträge aus den alten Ideen-Notizen
+async function seedMilestones() {
+  if(!db) return;
+  const done = await fbGet('milestones-seeded');
+  if(done) return;
+  const existing = await fbGet('milestones');
+  if(!existing){
+    for(const m of MS_SEED) await push(ref(db,'milestones'), m);
+  }
+  await fbSet('milestones-seeded', true);
+}
+seedMilestones();
 
 // ── Archive ──────────────────────────────────────────────────
 async function loadArchive() {
