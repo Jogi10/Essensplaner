@@ -2,9 +2,27 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>👨‍👩‍👧 Familienplaner</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<title>Familienplaner</title>
 <link href="https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet"/>
+
+<!-- PWA: Homescreen-Symbol und Offline-Betrieb -->
+<link rel="manifest" href="manifest.json"/>
+<link rel="apple-touch-icon" href="apple-touch-icon.png"/>
+<link rel="icon" href="icon-192.png"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Familienplaner"/>
+<meta name="theme-color" content="#2d2416"/>
+
+<!-- Theme sofort setzen, damit es beim Laden nicht kurz aufblitzt -->
+<script>
+  try {
+    var t = localStorage.getItem('theme');
+    if (!t) t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', t);
+  } catch(e) { document.documentElement.setAttribute('data-theme','light'); }
+</script>
 
 <!-- ═══════════════════════════════════════════════════════════
      🔧 FIREBASE KONFIGURATION – hier deine Werte eintragen!
@@ -28,9 +46,12 @@
   --bg:       #faf7f2;
   --bg2:      #f0e8dc;
   --white:    #ffffff;
+  --row-alt:  #fdf9f5;
+  --hover:    #fffbf6;
   --border:   #e2d5c3;
   --border2:  #c4b49a;
   --text:     #2d2416;
+  --text2:    #5a4a38;
   --muted:    #a0886e;
   --accent:   #c17f2e;
   --accent-d: #a66c24;
@@ -39,6 +60,25 @@
   --head-bg:  #2d2416;
   --head-fg:  #faf7f2;
 }
+html[data-theme="dark"] {
+  --bg:       #17140f;
+  --bg2:      #262019;
+  --white:    #211c15;
+  --row-alt:  #1d1813;
+  --hover:    #2b2419;
+  --border:   #3a3127;
+  --border2:  #574a3b;
+  --text:     #ece3d5;
+  --text2:    #c9bba6;
+  --muted:    #9c8b75;
+  --accent:   #d9933c;
+  --accent-d: #c17f2e;
+  --green:    #6da36d;
+  --red:      #d4584a;
+  --head-bg:  #100d0a;
+  --head-fg:  #f3ece0;
+}
+html { background: var(--bg); }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Crimson Text', Georgia, serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
@@ -46,11 +86,11 @@ body { font-family: 'Crimson Text', Georgia, serif; background: var(--bg); color
 header { background: var(--head-bg); color: var(--head-fg); padding: 18px 24px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 12px rgba(0,0,0,.3); }
 .header-inner { max-width: 960px; margin: 0 auto; display: flex; align-items: baseline; gap: 12px; justify-content: space-between; }
 .header-inner h1 { font-family: 'DM Serif Display', serif; font-size: 1.7rem; font-weight: 400; letter-spacing: -.01em; }
-.header-inner .sub { font-size: .85rem; color: #a0886e; font-style: italic; }
+.header-inner .sub { font-size: .85rem; color: var(--muted); font-style: italic; }
 .sync-dot { width: 8px; height: 8px; border-radius: 50%; background: #888; display: inline-block; margin-right: 5px; transition: background .4s; }
 .sync-dot.ok { background: #5a8a5a; }
 .sync-dot.err { background: var(--red); }
-.sync-label { font-size: .78rem; color: #a0886e; }
+.sync-label { font-size: .78rem; color: var(--muted); }
 
 /* ── Setup overlay ── */
 #setup-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 999; display: flex; align-items: center; justify-content: center; padding: 16px; }
@@ -89,8 +129,8 @@ main { max-width: 960px; margin: 0 auto; padding: 28px 16px 60px; }
 .plan-table { width: 100%; border-collapse: collapse; min-width: 480px; }
 .plan-table th { padding: 10px 8px; text-align: left; color: var(--muted); font-weight: 600; font-size: .78rem; text-transform: uppercase; letter-spacing: .06em; border-bottom: 2px solid var(--border); }
 .plan-table td { padding: 10px 8px; vertical-align: top; border-bottom: 1px solid var(--border); }
-.plan-table tr:nth-child(even) td { background: #fdf9f5; }
-.day-label { font-weight: 600; font-size: .95rem; color: #5a4a38; width: 100px; }
+.plan-table tr:nth-child(even) td { background: var(--row-alt); }
+.day-label { font-weight: 600; font-size: .95rem; color: var(--text2); width: 100px; }
 .meal-input { width: 100%; border: none; border-bottom: 1px solid var(--border); background: transparent; padding: 3px 2px; font-size: .95rem; color: var(--text); outline: none; font-family: inherit; transition: border-color .2s; }
 .meal-input:focus { border-bottom-color: var(--accent); }
 .table-wrap { overflow-x: auto; }
@@ -125,14 +165,31 @@ main { max-width: 960px; margin: 0 auto; padding: 28px 16px 60px; }
 .ms-date-badge { flex: 0 0 auto; font-size: .8rem; color: var(--muted); letter-spacing: .02em; padding-top: 2px; min-width: 82px; }
 .ms-body { flex: 1; font-size: 1rem; line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
 
+/* ── Wörterbuch ── */
+.dict-grid { display: flex; flex-direction: column; gap: 26px; }
+.dict-card { background: var(--white); border: 1px solid var(--border); border-radius: 6px; padding: 18px 18px 8px; }
+.dict-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+.dict-name { flex: 1; font-family: 'DM Serif Display', serif; font-size: 1.35rem; color: var(--text); border: none; border-bottom: 1px dashed var(--border2); background: transparent; padding: 2px 4px; outline: none; font-weight: 400; min-width: 0; transition: border-color .2s; }
+.dict-name:focus { border-bottom-color: var(--accent); border-bottom-style: solid; }
+.dict-name-hint { flex: 0 0 auto; font-size: .72rem; color: var(--border2); font-style: italic; }
+.dict-add { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+.dict-add .text-input { min-width: 130px; flex: 1; }
+.dict-rows { display: flex; flex-direction: column; }
+.dict-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--border); }
+.dict-row:last-child { border-bottom: none; }
+.dict-word { flex: 1 1 40%; font-weight: 600; font-size: 1rem; word-break: break-word; }
+.dict-arrow { flex: 0 0 auto; color: var(--border2); font-size: .9rem; }
+.dict-meaning { flex: 1 1 50%; color: var(--text2); font-size: .98rem; word-break: break-word; }
+.dict-count { font-size: .78rem; color: var(--muted); padding: 6px 0 10px; }
+
 /* ── Archive ── */
 .archive-list { display: flex; flex-direction: column; gap: 8px; }
 .archive-item { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; background: var(--white); border: 1px solid var(--border); border-radius: 4px; cursor: pointer; transition: all .2s; }
-.archive-item:hover { border-color: var(--accent); background: #fffbf6; }
+.archive-item:hover { border-color: var(--accent); background: var(--hover); }
 .archive-plan-table { width: 100%; border-collapse: collapse; }
 .archive-plan-table th { padding: 8px; text-align: left; color: var(--muted); font-size: .78rem; text-transform: uppercase; letter-spacing: .06em; border-bottom: 2px solid var(--border); }
 .archive-plan-table td { padding: 8px; border-bottom: 1px solid var(--border); font-size: .92rem; vertical-align: top; }
-.archive-plan-table tr:nth-child(even) td { background: #fdf9f5; }
+.archive-plan-table tr:nth-child(even) td { background: var(--row-alt); }
 .back-link { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); cursor: pointer; font-size: .9rem; margin-bottom: 20px; border: none; background: none; font-family: inherit; }
 .back-link:hover { color: var(--text); }
 h2.section-title { font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 1.5rem; margin-bottom: 20px; }
@@ -141,8 +198,71 @@ h2.section-title { font-family: 'DM Serif Display', serif; font-weight: 400; fon
 #toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--head-bg); color: var(--head-fg); padding: 10px 22px; border-radius: 30px; font-size: .9rem; transition: transform .3s; z-index: 999; pointer-events: none; }
 #toast.show { transform: translateX(-50%) translateY(0); }
 
+/* ── Theme-Schalter ── */
+.theme-btn { width: 30px; height: 30px; border-radius: 50%; border: 1px solid rgba(255,255,255,.25); background: transparent; color: var(--head-fg); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; transition: background .2s; }
+.theme-btn:hover { background: rgba(255,255,255,.12); }
+.theme-btn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ── Gerichte-Sammlung ── */
+.pool-toggle { display: inline-flex; align-items: center; gap: 7px; background: none; border: none; font-family: inherit; font-size: .9rem; color: var(--muted); cursor: pointer; padding: 4px 0; }
+.pool-toggle:hover { color: var(--text); }
+.pool-toggle .chev { transition: transform .2s; display: inline-block; }
+.pool-toggle.open .chev { transform: rotate(90deg); }
+.pool-box { margin-top: 12px; padding: 14px 16px; background: var(--white); border: 1px solid var(--border); border-radius: 5px; }
+.pool-hint { font-size: .8rem; color: var(--muted); font-style: italic; margin-bottom: 10px; }
+.pool-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.pool-chip { display: inline-flex; align-items: center; gap: 7px; border: 1px solid var(--border2); background: var(--bg); border-radius: 20px; padding: 5px 6px 5px 13px; font-family: inherit; font-size: .9rem; color: var(--text); cursor: pointer; transition: all .2s; }
+.pool-chip:hover { border-color: var(--accent); background: var(--hover); }
+.pool-chip .when { font-size: .72rem; color: var(--muted); }
+.pool-chip .kill { border: none; background: none; color: var(--border2); cursor: pointer; font-size: 1rem; line-height: 1; padding: 0 4px; }
+.pool-chip .kill:hover { color: var(--red); }
+
+/* ── Einkauf: Kategorien & Mengen ── */
+.shop-add { flex-wrap: wrap; }
+.shop-qty { flex: 0 0 76px; min-width: 76px; }
+.shop-cat-select { flex: 0 0 auto; border: 1px solid var(--border2); border-radius: 2px; background: var(--white); color: var(--text); font-family: inherit; font-size: .95rem; padding: 9px 8px; outline: none; max-width: 165px; }
+.shop-group-head { display: flex; align-items: center; gap: 8px; font-size: .74rem; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); font-weight: 600; padding: 14px 0 4px; }
+.shop-group-head:first-child { padding-top: 4px; }
+.shop-group-head::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+.item-qty { color: var(--muted); font-size: .85rem; margin-right: 6px; }
+.row-cat { border: none; background: transparent; color: var(--border2); font-family: inherit; font-size: .72rem; outline: none; max-width: 92px; cursor: pointer; text-align: right; }
+.row-cat:hover { color: var(--muted); }
+
+/* ── To-Do Fälligkeit ── */
+.todo-due { flex: 0 0 auto; max-width: 160px; }
+.due-badge { display: inline-block; font-size: .74rem; color: var(--muted); background: var(--bg2); border-radius: 10px; padding: 1px 9px; margin-top: 3px; }
+.due-badge.over { background: rgba(192,57,43,.14); color: var(--red); font-weight: 600; }
+
+/* ── Meilenstein-Filter & Kind-Abzeichen ── */
+.filter-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+.filter-chip { border: 1px solid var(--border2); background: transparent; border-radius: 20px; padding: 5px 15px; font-family: inherit; font-size: .85rem; color: var(--muted); cursor: pointer; transition: all .2s; }
+.filter-chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.kid-badge { display: inline-block; font-size: .7rem; letter-spacing: .04em; text-transform: uppercase; color: var(--accent); border: 1px solid var(--accent); border-radius: 10px; padding: 0 8px; margin-bottom: 4px; }
+.ms-select { flex: 0 0 auto; border: 1px solid var(--border2); border-radius: 2px; background: var(--white); color: var(--text); font-family: inherit; font-size: .95rem; padding: 9px 8px; outline: none; max-width: 170px; }
+
+/* ── Archiv-Suche & Datenbereich ── */
+.search-row { display: flex; gap: 8px; margin-bottom: 18px; }
+.search-hit { background: var(--white); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 4px; padding: 11px 15px; cursor: pointer; transition: all .2s; }
+.search-hit:hover { background: var(--hover); }
+.search-hit .dish { font-weight: 600; }
+.search-hit .where { font-size: .8rem; color: var(--muted); margin-top: 2px; }
+.data-box { margin-top: 36px; padding-top: 20px; border-top: 1px solid var(--border); }
+.data-box h3 { font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 1.1rem; margin-bottom: 6px; }
+.data-box p { font-size: .85rem; color: var(--muted); margin-bottom: 12px; line-height: 1.5; }
+
 /* ── SVG icons ── */
 svg.icon { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+
+/* ── Schmale Bildschirme ── */
+@media (max-width: 560px) {
+  header { padding: 14px 16px; }
+  .sync-label { display: none; }
+  .header-inner h1 { font-size: 1.45rem; }
+  .header-inner svg[aria-label="Familie"] { width: 48px; height: 30px; }
+  .dict-name-hint { display: none; }
+  .shop-cat-select { max-width: none; flex: 1 1 140px; }
+  main { padding: 22px 14px 70px; }
+}
 </style>
 </head>
 <body>
@@ -169,31 +289,45 @@ svg.icon { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-w
 <header>
   <div class="header-inner">
     <div style="display:flex;align-items:center;gap:14px">
-      <svg width="44" height="44" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <svg width="60" height="37" viewBox="0 0 52 32" fill="none" stroke="currentColor" stroke-width="1.8"
+           stroke-linecap="round" xmlns="http://www.w3.org/2000/svg" aria-label="Familie">
         <!-- Papa -->
-        <circle cx="10" cy="9" r="4" stroke="#faf7f2" stroke-width="1.8" fill="none"/>
-        <path d="M4 26 C4 18 16 18 16 26" stroke="#faf7f2" stroke-width="1.8" fill="none" stroke-linecap="round"/>
-        <line x1="10" y1="13" x2="10" y2="22" stroke="#faf7f2" stroke-width="1.8" stroke-linecap="round"/>
-        <line x1="10" y1="16" x2="6" y2="20" stroke="#faf7f2" stroke-width="1.8" stroke-linecap="round"/>
-        <line x1="10" y1="16" x2="14" y2="20" stroke="#faf7f2" stroke-width="1.8" stroke-linecap="round"/>
+        <circle cx="9.5" cy="6.6" r="3.6"/>
+        <line x1="9.5" y1="10.2" x2="9.5" y2="18.6"/>
+        <line x1="9.5" y1="12.6" x2="5.3" y2="16.2"/>
+        <line x1="9.5" y1="12.6" x2="13.7" y2="16.2"/>
+        <line x1="9.5" y1="18.6" x2="5.7" y2="26"/>
+        <line x1="9.5" y1="18.6" x2="13.3" y2="26"/>
         <!-- Mama -->
-        <circle cx="22" cy="9" r="4" stroke="#faf7f2" stroke-width="1.8" fill="none"/>
-        <path d="M15 27 C15 19 29 19 29 27" stroke="#faf7f2" stroke-width="1.8" fill="none" stroke-linecap="round"/>
-        <line x1="22" y1="13" x2="22" y2="22" stroke="#faf7f2" stroke-width="1.8" stroke-linecap="round"/>
-        <line x1="22" y1="16" x2="18" y2="20" stroke="#faf7f2" stroke-width="1.8" stroke-linecap="round"/>
-        <line x1="22" y1="16" x2="26" y2="20" stroke="#faf7f2" stroke-width="1.8" stroke-linecap="round"/>
-        <!-- Kind -->
-        <circle cx="34" cy="13" r="3" stroke="#faf7f2" stroke-width="1.8" fill="none"/>
-        <path d="M29 28 C29 22 39 22 39 28" stroke="#faf7f2" stroke-width="1.8" fill="none" stroke-linecap="round"/>
-        <line x1="34" y1="16" x2="34" y2="23" stroke="#faf7f2" stroke-width="1.8" stroke-linecap="round"/>
-        <line x1="34" y1="18" x2="31" y2="21" stroke="#faf7f2" stroke-width="1.8" stroke-linecap="round"/>
-        <line x1="34" y1="18" x2="37" y2="21" stroke="#faf7f2" stroke-width="1.8" stroke-linecap="round"/>
+        <circle cx="21.5" cy="6.8" r="3.4"/>
+        <line x1="21.5" y1="10.2" x2="21.5" y2="18.6"/>
+        <line x1="21.5" y1="12.6" x2="17.5" y2="16.2"/>
+        <line x1="21.5" y1="12.6" x2="25.5" y2="16.2"/>
+        <line x1="21.5" y1="18.6" x2="17.9" y2="26"/>
+        <line x1="21.5" y1="18.6" x2="25.1" y2="26"/>
+        <!-- Kind 1 -->
+        <circle cx="32.5" cy="11.4" r="2.8"/>
+        <line x1="32.5" y1="14.2" x2="32.5" y2="21"/>
+        <line x1="32.5" y1="16" x2="29.3" y2="18.9"/>
+        <line x1="32.5" y1="16" x2="35.7" y2="18.9"/>
+        <line x1="32.5" y1="21" x2="29.6" y2="27"/>
+        <line x1="32.5" y1="21" x2="35.4" y2="27"/>
+        <!-- Kind 2 -->
+        <circle cx="42.5" cy="14" r="2.4"/>
+        <line x1="42.5" y1="16.4" x2="42.5" y2="22.6"/>
+        <line x1="42.5" y1="17.8" x2="39.8" y2="20.3"/>
+        <line x1="42.5" y1="17.8" x2="45.2" y2="20.3"/>
+        <line x1="42.5" y1="22.6" x2="40" y2="27.8"/>
+        <line x1="42.5" y1="22.6" x2="45" y2="27.8"/>
       </svg>
       <h1>Familienplaner</h1>
     </div>
-    <div style="display:flex;align-items:center;gap:6px">
-      <span class="sync-dot" id="sync-dot"></span>
-      <span class="sync-label" id="sync-label">Verbinde…</span>
+    <div style="display:flex;align-items:center;gap:10px">
+      <button class="theme-btn" id="theme-btn" onclick="toggleTheme()" title="Hell / Dunkel" aria-label="Hell oder dunkel umschalten"></button>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span class="sync-dot" id="sync-dot"></span>
+        <span class="sync-label" id="sync-label">Verbinde…</span>
+      </div>
     </div>
   </div>
 </header>
@@ -219,6 +353,10 @@ svg.icon { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-w
     <button class="tab-btn" onclick="showTab('milestones',this)">
       <svg class="icon" viewBox="0 0 24 24"><path d="M12 2l2.4 5.2 5.6.7-4.2 3.9 1.1 5.6L12 14.7 7.1 17.4l1.1-5.6L4 7.9l5.6-.7z"/></svg>
       Meilensteine
+    </button>
+    <button class="tab-btn" onclick="showTab('dict',this)">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/><path d="M9 7h7M9 11h5"/></svg>
+      Wörterbuch
     </button>
     <button class="tab-btn" onclick="showTab('archive',this)">
       <svg class="icon" viewBox="0 0 24 24"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg>
@@ -259,13 +397,25 @@ svg.icon { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-w
         Einkaufsliste aus Plan erstellen
       </button>
     </div>
+
+    <div style="margin-top:22px">
+      <button class="pool-toggle" id="pool-toggle" onclick="togglePool()">
+        <span class="chev">›</span><span id="pool-label">Gerichte-Sammlung</span>
+      </button>
+      <div class="pool-box" id="pool-box" style="display:none">
+        <div class="pool-hint">Erst ein Feld im Plan antippen, dann ein Gericht auswählen. Sortiert nach „am längsten nicht mehr gehabt“.</div>
+        <div class="pool-chips" id="pool-chips"></div>
+      </div>
+    </div>
   </section>
 
   <!-- ── EINKAUF ── -->
   <section id="sec-shop" class="section">
     <h2 class="section-title">Einkaufsliste</h2>
     <div class="shop-add">
-      <input class="text-input" id="shop-input" placeholder="Zutat hinzufügen…" onkeydown="if(event.key==='Enter')addShopItem()"/>
+      <input class="text-input shop-qty" id="shop-qty" placeholder="Menge" onkeydown="if(event.key==='Enter')addShopItem()"/>
+      <input class="text-input" id="shop-input" placeholder="Zutat hinzufügen…" onkeydown="if(event.key==='Enter')addShopItem()" oninput="suggestCategory()"/>
+      <select class="shop-cat-select" id="shop-cat"></select>
       <button class="btn primary" onclick="addShopItem()">
         <svg class="icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
         Hinzufügen
@@ -288,6 +438,7 @@ svg.icon { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-w
     <h2 class="section-title">To-Do Liste</h2>
     <div class="shop-add">
       <input class="text-input" id="todo-input" placeholder="Aufgabe hinzufügen…" onkeydown="if(event.key==='Enter')addTodoItem()"/>
+      <input class="text-input todo-due" type="date" id="todo-due" title="Fällig bis (optional)"/>
       <button class="btn primary" onclick="addTodoItem()">
         <svg class="icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
         Hinzufügen
@@ -299,24 +450,81 @@ svg.icon { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-w
 
   <!-- ── MEILENSTEINE ── -->
   <section id="sec-milestones" class="section">
-    <h2 class="section-title">Meilensteine & neue Wörter</h2>
-    <p style="color:var(--muted);margin-bottom:16px;font-style:italic;font-size:.95rem">Was gab's Neues? Erste Schritte, erste Wörter, Messungen, besondere Momente.</p>
+    <h2 class="section-title">Meilensteine</h2>
+    <p style="color:var(--muted);margin-bottom:16px;font-style:italic;font-size:.95rem">An Tag X kann ich Y — erste Schritte, erste Wörter, alles zum ersten Mal.</p>
     <div class="ms-add">
       <input class="text-input ms-date" type="date" id="ms-date"/>
-      <input class="text-input" id="ms-text" placeholder="Was ist passiert?" onkeydown="if(event.key==='Enter')addMilestone()"/>
+      <select class="ms-select" id="ms-kid"></select>
+      <input class="text-input" id="ms-text" placeholder="Was kann ich jetzt?" onkeydown="if(event.key==='Enter')addMilestone()"/>
       <button class="btn primary" onclick="addMilestone()">
         <svg class="icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
         Eintragen
       </button>
     </div>
+    <div class="filter-row" id="ms-filter"></div>
     <div class="ms-list" id="ms-list"></div>
+  </section>
+
+  <!-- ── WÖRTERBUCH ── -->
+  <section id="sec-dict" class="section">
+    <h2 class="section-title">Wörterbuch</h2>
+    <p style="color:var(--muted);margin-bottom:20px;font-style:italic;font-size:.95rem">Wie die Kinder es sagen — und was sie damit meinen.</p>
+    <div class="dict-grid">
+
+      <div class="dict-card">
+        <div class="dict-head">
+          <input class="dict-name" id="dict-name-kid1" placeholder="Kind 1" oninput="scheduleKidName('kid1')"/>
+          <span class="dict-name-hint">Name antippen zum Ändern</span>
+        </div>
+        <div class="dict-add">
+          <input class="text-input" id="dict-word-kid1" placeholder="Wort des Kindes" onkeydown="if(event.key==='Enter')addDictEntry('kid1')"/>
+          <input class="text-input" id="dict-meaning-kid1" placeholder="heißt auf Deutsch…" onkeydown="if(event.key==='Enter')addDictEntry('kid1')"/>
+          <button class="btn primary" onclick="addDictEntry('kid1')">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+          </button>
+        </div>
+        <div class="dict-rows" id="dict-rows-kid1"></div>
+        <div class="dict-count" id="dict-count-kid1"></div>
+      </div>
+
+      <div class="dict-card">
+        <div class="dict-head">
+          <input class="dict-name" id="dict-name-kid2" placeholder="Kind 2" oninput="scheduleKidName('kid2')"/>
+          <span class="dict-name-hint">Name antippen zum Ändern</span>
+        </div>
+        <div class="dict-add">
+          <input class="text-input" id="dict-word-kid2" placeholder="Wort des Kindes" onkeydown="if(event.key==='Enter')addDictEntry('kid2')"/>
+          <input class="text-input" id="dict-meaning-kid2" placeholder="heißt auf Deutsch…" onkeydown="if(event.key==='Enter')addDictEntry('kid2')"/>
+          <button class="btn primary" onclick="addDictEntry('kid2')">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+          </button>
+        </div>
+        <div class="dict-rows" id="dict-rows-kid2"></div>
+        <div class="dict-count" id="dict-count-kid2"></div>
+      </div>
+
+    </div>
   </section>
 
   <!-- ── ARCHIV ── -->
   <section id="sec-archive" class="section">
     <div id="archive-list-view">
       <h2 class="section-title">Archiv</h2>
+      <div class="search-row">
+        <input class="text-input" id="archive-search" placeholder="Gericht suchen — z. B. Lasagne" oninput="scheduleArchiveSearch()"/>
+        <button class="btn" onclick="clearArchiveSearch()">Zurücksetzen</button>
+      </div>
+      <div id="archive-search-results" style="display:none"></div>
       <div class="archive-list" id="archive-list"></div>
+
+      <div class="data-box">
+        <h3>Datensicherung</h3>
+        <p>Lädt alles — Wochenpläne, Einkauf, Ideen, To-Dos, Meilensteine und Wörterbuch — als eine Datei auf dieses Gerät. Gut aufgehoben für den Fall der Fälle.</p>
+        <button class="btn" onclick="downloadBackup()">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+          Sicherung herunterladen
+        </button>
+      </div>
     </div>
     <div id="archive-detail-view" style="display:none">
       <button class="back-link" onclick="showArchiveList()">
@@ -345,8 +553,20 @@ svg.icon { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-w
 
 <!-- Firebase SDK -->
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase, ref, set, get, onValue, push, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+// Das SDK wird bewusst nicht fest eingebunden: Ist es einmal nicht erreichbar,
+// soll die App trotzdem starten und den zuletzt gespeicherten Stand zeigen,
+// statt als leere Seite dazustehen.
+let initializeApp, getDatabase, ref, set, get, onValue, push, remove;
+let sdkReady = false;
+try {
+  const appMod = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
+  const dbMod  = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js");
+  initializeApp = appMod.initializeApp;
+  ({ getDatabase, ref, set, get, onValue, push, remove } = dbMod);
+  sdkReady = true;
+} catch (e) {
+  console.warn('Firebase-SDK nicht erreichbar — die App läuft vorerst nur lokal.', e);
+}
 
 // ── Check if configured ──────────────────────────────────────
 const isConfigured = FIREBASE_CONFIG.apiKey !== "DEIN_API_KEY";
@@ -365,7 +585,7 @@ if (!isConfigured) {
 
 // ── Init Firebase ────────────────────────────────────────────
 let db = null;
-if (isConfigured) {
+if (isConfigured && sdkReady) {
   try {
     const app = initializeApp(FIREBASE_CONFIG);
     db = getDatabase(app);
@@ -374,6 +594,8 @@ if (isConfigured) {
     setSyncStatus('err');
     console.error('Firebase init error:', e);
   }
+} else if (isConfigured) {
+  setSyncStatus('err');
 }
 
 // ── Helpers ──────────────────────────────────────────────────
@@ -414,9 +636,28 @@ async function fbSet(path, val) {
   if (!db) { localStorage.setItem(path, JSON.stringify(val)); return; }
   try { await set(ref(db, path), val); } catch(e) { console.error(e); }
 }
+// Jeder Listener legt zusätzlich eine lokale Kopie ab. Dadurch zeigt die App
+// beim Start sofort den letzten Stand — auch ohne Netz.
 function fbListen(path, cb) {
+  const ck = 'cache:'+path;
+  try {
+    const cached = localStorage.getItem(ck);
+    if (cached !== null) cb(JSON.parse(cached));
+  } catch(e) {}
   if (!db) return;
-  onValue(ref(db, path), snap => cb(snap.exists()?snap.val():null));
+  onValue(ref(db, path), snap => {
+    const val = snap.exists()?snap.val():null;
+    try { localStorage.setItem(ck, JSON.stringify(val)); } catch(e) {}
+    cb(val);
+  });
+}
+
+// Firebase lehnt Objekte mit undefined-Werten ab — die Hilfs-ID muss
+// daher wirklich entfernt und nicht nur auf undefined gesetzt werden.
+function withoutId(item) {
+  const copy = {...item};
+  delete copy.id;
+  return copy;
 }
 
 // ── Toast ────────────────────────────────────────────────────
@@ -425,6 +666,33 @@ function toast(msg='✓ Gespeichert') {
   t.textContent = msg;
   t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'), 2000);
+}
+
+// ── Hell / Dunkel ────────────────────────────────────────────
+const SUN = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.5"/><path d="M12 1.5v2.5M12 20v2.5M4.2 4.2l1.8 1.8M18 18l1.8 1.8M1.5 12h2.5M20 12h2.5M4.2 19.8L6 18M18 6l1.8-1.8"/></svg>';
+const MOON = '<svg viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"/></svg>';
+
+function paintThemeButton() {
+  const dark = document.documentElement.getAttribute('data-theme')==='dark';
+  document.getElementById('theme-btn').innerHTML = dark ? SUN : MOON;
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if(meta) meta.setAttribute('content', dark ? '#100d0a' : '#2d2416');
+}
+
+window.toggleTheme = function() {
+  const dark = document.documentElement.getAttribute('data-theme')==='dark';
+  const next = dark ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  try { localStorage.setItem('theme', next); } catch(e) {}
+  paintThemeButton();
+};
+paintThemeButton();
+
+// ── Service Worker (Offline-Betrieb) ─────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  });
 }
 
 // ── Plan rendering ───────────────────────────────────────────
@@ -448,6 +716,7 @@ function renderPlan(plan) {
         if(!currentPlan[d]) currentPlan[d]={};
         currentPlan[d][m]=e.target.value;
       });
+      inp.addEventListener('focus', ()=>{ lastMealInput = inp; });
       td.appendChild(inp); tr.appendChild(td);
     });
     tbody.appendChild(tr);
@@ -480,6 +749,7 @@ window.savePlan = async function() {
     await fbSet('archive-index', updated);
     archiveKeys = updated;
   }
+  await updateMealPool(key);
   setSyncStatus('ok');
   toast('✓ Wochenplan gespeichert!');
   const btn = document.getElementById('save-btn');
@@ -487,7 +757,141 @@ window.savePlan = async function() {
   setTimeout(()=>btn.classList.remove('success'),1500);
 };
 
+// ── Gerichte-Sammlung ────────────────────────────────────────
+let mealPool = [];
+let lastMealInput = null;
+
+// Firebase-Schlüssel dürfen . # $ [ ] / nicht enthalten und nicht leer sein.
+function poolKey(name) {
+  const k = name.toLowerCase().trim().replace(/[.#$\[\]\/]/g,'_').slice(0,90);
+  return k.replace(/^_+|_+$/g,'') ? k : '';
+}
+
+// Beim Speichern wandert jedes eingetragene Gericht in die Sammlung,
+// zusammen mit dem Datum der Woche, in der es zuletzt dran war.
+async function updateMealPool(weekKey) {
+  const weekDate = weekKey.replace('week-','');
+  const seen = {};
+  DAYS.forEach(d=>MEALS.forEach(m=>{
+    const v = ((currentPlan[d]&&currentPlan[d][m])||'').trim();
+    const k = v ? poolKey(v) : '';
+    if(k) seen[k] = v;
+  }));
+  for(const [k,name] of Object.entries(seen)) {
+    const prev = mealPool.find(p=>p.key===k);
+    if(prev && prev.lastUsed > weekDate) continue;
+    await fbSet('meals/'+k, { name, lastUsed: weekDate });
+  }
+}
+
+function renderPool() {
+  const box = document.getElementById('pool-chips');
+  const label = document.getElementById('pool-label');
+  label.textContent = mealPool.length ? `Gerichte-Sammlung (${mealPool.length})` : 'Gerichte-Sammlung';
+  box.innerHTML='';
+  if(mealPool.length===0){
+    box.innerHTML='<div style="color:var(--muted);font-style:italic;font-size:.9rem">Noch leer — sie füllt sich, sobald du Wochenpläne speicherst.</div>';
+    return;
+  }
+  const sorted=[...mealPool].sort((a,b)=>(a.lastUsed||'').localeCompare(b.lastUsed||''));
+  sorted.forEach(p=>{
+    const chip=document.createElement('button'); chip.className='pool-chip'; chip.type='button';
+    const txt=document.createElement('span'); txt.textContent=p.name;
+    const when=document.createElement('span'); when.className='when';
+    when.textContent = p.lastUsed ? msFormatDate(p.lastUsed).slice(0,6)+msFormatDate(p.lastUsed).slice(8) : '';
+    const kill=document.createElement('span'); kill.className='kill'; kill.textContent='×'; kill.title='Aus der Sammlung entfernen';
+    kill.onclick=(e)=>{ e.stopPropagation(); removeFromPool(p.key); };
+    chip.appendChild(txt); if(when.textContent) chip.appendChild(when); chip.appendChild(kill);
+    chip.onclick=()=>usePoolMeal(p.name);
+    box.appendChild(chip);
+  });
+}
+
+function usePoolMeal(name) {
+  if(!lastMealInput){ toast('Erst ein Feld im Wochenplan antippen'); return; }
+  const d=lastMealInput.dataset.day, m=lastMealInput.dataset.meal;
+  lastMealInput.value=name;
+  if(!currentPlan[d]) currentPlan[d]={};
+  currentPlan[d][m]=name;
+  toast(`✓ ${d}, ${m}`);
+}
+
+async function removeFromPool(key) {
+  if(!db){ mealPool=mealPool.filter(p=>p.key!==key); renderPool(); return; }
+  await remove(ref(db,'meals/'+key));
+}
+
+fbListen('meals', data=>{
+  mealPool = data ? Object.entries(data).map(([key,v])=>({key,...v})) : [];
+  renderPool();
+});
+
+window.togglePool = function() {
+  const box=document.getElementById('pool-box'), tgl=document.getElementById('pool-toggle');
+  const open = box.style.display!=='none';
+  box.style.display = open ? 'none' : 'block';
+  tgl.classList.toggle('open', !open);
+};
+
 // ── Shopping ─────────────────────────────────────────────────
+// Reihenfolge entspricht grob dem Weg durch den Laden.
+const CATS = ['Obst & Gemüse','Backwaren','Kühlregal','Fleisch & Wurst','Tiefkühl','Trockenware','Getränke','Haushalt','Sonstiges'];
+
+const CAT_WORDS = {
+  'Obst & Gemüse': ['apfel','äpfel','banane','birne','beere','erdbeer','himbeer','heidelbeer','trauben','orange','zitrone','limette','mandarine','pfirsich','melone','kiwi','ananas','salat','gurke','tomate','paprika','zwiebel','knoblauch','karotte','möhre','kartoffel','brokkoli','blumenkohl','zucchini','aubergine','spinat','lauch','sellerie','kürbis','pilz','champignon','avocado','mais','bohne','erbse','radieschen','rucola','kohl','kraut','ingwer','petersilie','schnittlauch','basilikum'],
+  'Backwaren': ['brot','brötchen','semmel','baguette','toast','brezn','breze','croissant','kuchen','kaiser'],
+  'Kühlregal': ['milch','butter','joghurt','jogurt','quark','käse','sahne','schmand','frischkäse','mozzarella','feta','parmesan','ei','eier','pudding','margarine','creme fraiche','crème','skyr','buttermilch','hefe'],
+  'Fleisch & Wurst': ['fleisch','hack','hackfleisch','schnitzel','wurst','salami','schinken','speck','bacon','hähnchen','hühner','pute','rind','schwein','lachs','fisch','forelle','garnele','leberkäs','würstchen','bratwurst'],
+  'Tiefkühl': ['tiefkühl','tk ','gefrier','eis','pizza','pommes','fischstäbchen','blätterteig','spinat tk'],
+  'Trockenware': ['nudel','spaghetti','penne','reis','mehl','zucker','salz','pfeffer','öl','essig','passierte','dose','konserve','linsen','couscous','bulgur','haferflocken','müsli','cornflakes','zwieback','nutella','marmelade','honig','senf','ketchup','mayo','soße','sauce','brühe','gewürz','backpulver','vanille','schokolade','keks','chips','nüsse','mandel','rosinen','tomatenmark','kokosmilch','curry','paniermehl'],
+  'Getränke': ['wasser','saft','apfelsaft','orangensaft','traubensaft','multivitaminsaft','cola','limo','bier','wein','kaffee','tee','sprudel','schorle','sirup','mineralwasser'],
+  'Haushalt': ['spülmittel','waschmittel','putz','klopapier','toilettenpapier','küchenrolle','müllbeutel','windel','feuchttücher','shampoo','duschgel','zahnpasta','seife','schwamm','alufolie','frischhalte','backpapier','taschentücher','batterie']
+};
+
+// Kurze Stichwörter nur als eigenes Wort werten, sonst findet "ei" auch in
+// "Hackfleisch" und "eis" in "Reis". Längere dürfen am Wortanfang oder -ende
+// stehen, damit Zusammensetzungen wie "Vollkornbrot" greifen.
+function wordHit(t, w) {
+  if(w.includes(' ')) return t.includes(w);
+  const esc = w.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  const L = 'a-zäöüß';
+  if(w.length<=3) return new RegExp(`(^|[^${L}])${esc}([^${L}]|$)`).test(t);
+  return new RegExp(`(^|[^${L}])${esc}|${esc}([^${L}]|$)`).test(t);
+}
+
+// Bei mehreren Treffern gewinnt das längste Stichwort — so schlägt
+// "Tomatenmark" das allgemeinere "Tomate".
+function autoCategory(text) {
+  const t = text.toLowerCase();
+  let best = null, bestLen = 0;
+  for(const cat of CATS){
+    const words = CAT_WORDS[cat]; if(!words) continue;
+    for(const w of words){
+      if(w.length > bestLen && wordHit(t,w)){ best = cat; bestLen = w.length; }
+    }
+  }
+  return best || 'Sonstiges';
+}
+
+function fillCatSelect(sel, value) {
+  sel.innerHTML='';
+  CATS.forEach(c=>{
+    const o=document.createElement('option'); o.value=c; o.textContent=c;
+    if(c===value) o.selected=true;
+    sel.appendChild(o);
+  });
+}
+fillCatSelect(document.getElementById('shop-cat'), 'Sonstiges');
+
+// Während des Tippens die passende Kategorie vorschlagen — überschreibbar.
+let catTouched = false;
+document.getElementById('shop-cat').addEventListener('change', ()=>{ catTouched = true; });
+window.suggestCategory = function() {
+  if(catTouched) return;
+  const txt = document.getElementById('shop-input').value;
+  document.getElementById('shop-cat').value = txt.trim() ? autoCategory(txt) : 'Sonstiges';
+};
+
 function renderShopping(items) {
   const list = document.getElementById('shop-list');
   const actions = document.getElementById('shop-actions');
@@ -497,22 +901,43 @@ function renderShopping(items) {
     actions.innerHTML='';
     return;
   }
-  items.forEach(item=>{
-    const div = document.createElement('div'); div.className='shop-item';
-    const cb = document.createElement('button');
-    cb.className='check-btn'+(item.done?' done':'');
-    cb.innerHTML=item.done?'<svg class="icon" style="width:13px;height:13px;stroke:white" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>':'';
-    cb.onclick=()=>toggleShop(item.id);
-    const textWrap=document.createElement('div'); textWrap.style.flex='1';
-    const text=document.createElement('span'); text.className='item-text'+(item.done?' done':'');
-    text.textContent=item.text; textWrap.appendChild(text);
-    if(item.source){const s=document.createElement('div');s.className='item-source';s.textContent=item.source;textWrap.appendChild(s);}
-    const del=document.createElement('button');del.className='del-btn';
-    del.innerHTML='<svg class="icon" style="width:16px;height:16px" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>';
-    del.onclick=()=>deleteShop(item.id);
-    div.appendChild(cb); div.appendChild(textWrap); div.appendChild(del);
-    list.appendChild(div);
+  const groups = {};
+  items.forEach(i=>{ const c = CATS.includes(i.cat) ? i.cat : 'Sonstiges'; (groups[c]=groups[c]||[]).push(i); });
+
+  CATS.forEach(cat=>{
+    const inGroup = groups[cat]; if(!inGroup) return;
+    inGroup.sort((a,b)=>(a.done?1:0)-(b.done?1:0));
+    const head=document.createElement('div'); head.className='shop-group-head';
+    const open = inGroup.filter(i=>!i.done).length;
+    head.appendChild(document.createTextNode(open ? `${cat} · ${open}` : cat));
+    list.appendChild(head);
+
+    inGroup.forEach(item=>{
+      const div = document.createElement('div'); div.className='shop-item';
+      const cb = document.createElement('button');
+      cb.className='check-btn'+(item.done?' done':'');
+      cb.innerHTML=item.done?'<svg class="icon" style="width:13px;height:13px;stroke:white" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>':'';
+      cb.onclick=()=>toggleShop(item.id);
+      const textWrap=document.createElement('div'); textWrap.style.flex='1';
+      const line=document.createElement('span'); line.className='item-text'+(item.done?' done':'');
+      if(item.qty){
+        const q=document.createElement('span'); q.className='item-qty'; q.textContent=item.qty;
+        line.appendChild(q);
+      }
+      line.appendChild(document.createTextNode(item.text));
+      textWrap.appendChild(line);
+      if(item.source){const s=document.createElement('div');s.className='item-source';s.textContent=item.source;textWrap.appendChild(s);}
+      const catSel=document.createElement('select'); catSel.className='row-cat';
+      fillCatSelect(catSel, CATS.includes(item.cat)?item.cat:'Sonstiges');
+      catSel.onchange=()=>changeShopCat(item.id, catSel.value);
+      const del=document.createElement('button');del.className='del-btn';
+      del.innerHTML='<svg class="icon" style="width:16px;height:16px" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>';
+      del.onclick=()=>deleteShop(item.id);
+      div.appendChild(cb); div.appendChild(textWrap); div.appendChild(catSel); div.appendChild(del);
+      list.appendChild(div);
+    });
   });
+
   const hasDone = items.some(i=>i.done);
   actions.innerHTML='';
   if(hasDone){
@@ -520,6 +945,12 @@ function renderShopping(items) {
     b.innerHTML='<svg class="icon" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg> Erledigte entfernen';
     b.onclick=clearDoneItems; actions.appendChild(b);
   }
+}
+
+async function changeShopCat(id, cat) {
+  const item = shopItems.find(i=>i.id===id); if(!item) return;
+  if(!db){ item.cat=cat; renderShopping(shopItems); return; }
+  await fbSet('shopping/'+id, {...withoutId(item), cat});
 }
 
 let shopItems=[];
@@ -531,7 +962,7 @@ fbListen('shopping', data=>{
 async function toggleShop(id) {
   const item = shopItems.find(i=>i.id===id);
   if(!item) return;
-  await fbSet('shopping/'+id, {...item,id:undefined,done:!item.done});
+  await fbSet('shopping/'+id, {...withoutId(item), done:!item.done});
 }
 async function deleteShop(id) {
   if(!db){shopItems=shopItems.filter(i=>i.id!==id);renderShopping(shopItems);return;}
@@ -542,11 +973,12 @@ async function clearDoneItems() {
 }
 
 window.addShopItem = async function() {
-  const inp=document.getElementById('shop-input');
+  const inp=document.getElementById('shop-input'), qtyEl=document.getElementById('shop-qty'), catEl=document.getElementById('shop-cat');
   const text=inp.value.trim(); if(!text) return;
-  inp.value='';
-  if(!db){shopItems.push({id:Date.now().toString(),text,done:false});renderShopping(shopItems);return;}
-  await push(ref(db,'shopping'),{text,done:false});
+  const qty=qtyEl.value.trim(), cat=catEl.value||'Sonstiges';
+  inp.value=''; qtyEl.value=''; catTouched=false; catEl.value='Sonstiges'; inp.focus();
+  if(!db){shopItems.push({id:Date.now().toString(),text,qty,cat,done:false});renderShopping(shopItems);return;}
+  await push(ref(db,'shopping'),{text,qty,cat,done:false});
 };
 
 window.generateShopping = async function() {
@@ -557,8 +989,9 @@ window.generateShopping = async function() {
       const v=(currentPlan[d]&&currentPlan[d][m]||'').trim();
       if(!v) continue;
       if(shopItems.some(i=>i.text===v)) continue;
-      if(!db){shopItems.push({id:Date.now()+Math.random()+'',text:v,done:false,source:d+' '+m});}
-      else await push(ref(db,'shopping'),{text:v,done:false,source:d+' '+m});
+      const cat=autoCategory(v);
+      if(!db){shopItems.push({id:Date.now()+Math.random()+'',text:v,qty:'',cat,done:false,source:d+' '+m});}
+      else await push(ref(db,'shopping'),{text:v,qty:'',cat,done:false,source:d+' '+m});
       added++;
     }
   }
@@ -592,7 +1025,13 @@ function renderTodo(items) {
     list.innerHTML='<div class="empty-state">Noch keine Aufgaben. Füge deine erste To-Do hinzu!</div>';
     actions.innerHTML=''; return;
   }
-  items.forEach(item=>{
+  const today = new Date().toISOString().slice(0,10);
+  const sorted = [...items].sort((a,b)=>{
+    if(!!a.done !== !!b.done) return a.done?1:-1;
+    const ad=a.due||'9999', bd=b.due||'9999';
+    return ad.localeCompare(bd);
+  });
+  sorted.forEach(item=>{
     const div = document.createElement('div'); div.className='shop-item';
     const cb = document.createElement('button');
     cb.className='check-btn'+(item.done?' done':'');
@@ -601,6 +1040,13 @@ function renderTodo(items) {
     const textWrap=document.createElement('div'); textWrap.style.flex='1';
     const text=document.createElement('span'); text.className='item-text'+(item.done?' done':'');
     text.textContent=item.text; textWrap.appendChild(text);
+    if(item.due){
+      const b=document.createElement('div');
+      const overdue = !item.done && item.due < today;
+      b.className='due-badge'+(overdue?' over':'');
+      b.textContent = (overdue?'überfällig · ':'bis ') + msFormatDate(item.due);
+      textWrap.appendChild(b);
+    }
     const del=document.createElement('button'); del.className='del-btn';
     del.innerHTML='<svg class="icon" style="width:16px;height:16px" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>';
     del.onclick=()=>deleteTodo(item.id);
@@ -624,7 +1070,7 @@ fbListen('todos', data=>{
 
 async function toggleTodo(id) {
   const item=todoItems.find(i=>i.id===id); if(!item) return;
-  await fbSet('todos/'+id, {...item,id:undefined,done:!item.done});
+  await fbSet('todos/'+id, {...withoutId(item), done:!item.done});
 }
 async function deleteTodo(id) {
   if(!db){todoItems=todoItems.filter(i=>i.id!==id);renderTodo(todoItems);return;}
@@ -634,11 +1080,12 @@ async function clearDoneTodos() {
   for(const item of todoItems.filter(i=>i.done)) await deleteTodo(item.id);
 }
 window.addTodoItem = async function() {
-  const inp=document.getElementById('todo-input');
+  const inp=document.getElementById('todo-input'), dueEl=document.getElementById('todo-due');
   const text=inp.value.trim(); if(!text) return;
-  inp.value='';
-  if(!db){todoItems.push({id:Date.now().toString(),text,done:false});renderTodo(todoItems);return;}
-  await push(ref(db,'todos'),{text,done:false});
+  const due=dueEl.value||'';
+  inp.value=''; dueEl.value=''; inp.focus();
+  if(!db){todoItems.push({id:Date.now().toString(),text,due,done:false});renderTodo(todoItems);return;}
+  await push(ref(db,'todos'),{text,due,done:false});
 };
 
 // ── Meilensteine ─────────────────────────────────────────────
@@ -656,14 +1103,43 @@ function msFormatDate(iso) {
   return d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'});
 }
 
+let msFilter = 'alle';
+const kidNames = { kid1:'', kid2:'' };
+function kidLabel(kid) {
+  return (kidNames[kid] && kidNames[kid].trim()) || (kid==='kid1'?'Kind 1':'Kind 2');
+}
+
+function renderMsControls() {
+  const sel = document.getElementById('ms-kid');
+  const keep = sel.value;
+  sel.innerHTML='';
+  ['kid1','kid2'].forEach(k=>{
+    const o=document.createElement('option'); o.value=k; o.textContent=kidLabel(k); sel.appendChild(o);
+  });
+  if(keep) sel.value = keep;
+
+  const row = document.getElementById('ms-filter');
+  row.innerHTML='';
+  [['alle','Alle'],['kid1',kidLabel('kid1')],['kid2',kidLabel('kid2')]].forEach(([val,label])=>{
+    const b=document.createElement('button');
+    b.className='filter-chip'+(msFilter===val?' active':'');
+    b.textContent=label;
+    b.onclick=()=>{ msFilter=val; renderMsControls(); renderMilestones(msItems); };
+    row.appendChild(b);
+  });
+}
+
 function renderMilestones(items) {
   const list = document.getElementById('ms-list');
   list.innerHTML='';
-  if(!items||items.length===0){
-    list.innerHTML='<div class="empty-state">Noch keine Einträge. Trage den ersten Meilenstein ein!</div>';
+  const visible = (items||[]).filter(i=> msFilter==='alle' ? true : i.kid===msFilter);
+  if(visible.length===0){
+    list.innerHTML = (items&&items.length)
+      ? '<div class="empty-state">Für diese Auswahl ist noch nichts eingetragen.</div>'
+      : '<div class="empty-state">Noch keine Einträge. Trage den ersten Meilenstein ein!</div>';
     return;
   }
-  const sorted = [...items].sort((a,b)=> (b.date||'').localeCompare(a.date||''));
+  const sorted = [...visible].sort((a,b)=> (b.date||'').localeCompare(a.date||''));
   let lastYear = null;
   sorted.forEach(item=>{
     const year = (item.date||'').slice(0,4);
@@ -675,7 +1151,11 @@ function renderMilestones(items) {
     const badge = document.createElement('div'); badge.className='ms-date-badge';
     badge.textContent = msFormatDate(item.date);
     const body = document.createElement('div'); body.className='ms-body';
-    body.textContent = item.text;
+    if(item.kid){
+      const kb=document.createElement('div'); kb.className='kid-badge'; kb.textContent=kidLabel(item.kid);
+      body.appendChild(kb); body.appendChild(document.createElement('br'));
+    }
+    body.appendChild(document.createTextNode(item.text));
     const del = document.createElement('button'); del.className='del-btn';
     del.innerHTML='<svg class="icon" style="width:16px;height:16px" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>';
     del.onclick=()=>deleteMilestone(item.id);
@@ -696,13 +1176,13 @@ async function deleteMilestone(id) {
 }
 
 window.addMilestone = async function() {
-  const dEl=document.getElementById('ms-date'), tEl=document.getElementById('ms-text');
-  const date=dEl.value, text=tEl.value.trim();
+  const dEl=document.getElementById('ms-date'), tEl=document.getElementById('ms-text'), kEl=document.getElementById('ms-kid');
+  const date=dEl.value, text=tEl.value.trim(), kid=kEl.value||'kid1';
   if(!text){ toast('Bitte noch beschreiben, was passiert ist'); return; }
   if(!date){ toast('Bitte noch ein Datum wählen'); return; }
   dEl.value=''; tEl.value='';
-  if(!db){msItems.push({id:Date.now().toString(),date,text});renderMilestones(msItems);return;}
-  await push(ref(db,'milestones'),{date,text});
+  if(!db){msItems.push({id:Date.now().toString(),date,text,kid});renderMilestones(msItems);return;}
+  await push(ref(db,'milestones'),{date,text,kid});
   toast('✓ Eingetragen');
 };
 
@@ -718,6 +1198,73 @@ async function seedMilestones() {
   await fbSet('milestones-seeded', true);
 }
 seedMilestones();
+
+// ── Wörterbuch ───────────────────────────────────────────────
+const KIDS = ['kid1','kid2'];
+const kidNameTimers = {};
+let dictItems = { kid1: [], kid2: [] };
+
+function renderDict(kid) {
+  const rows = document.getElementById('dict-rows-'+kid);
+  const count = document.getElementById('dict-count-'+kid);
+  const items = dictItems[kid] || [];
+  rows.innerHTML='';
+  if(items.length===0){
+    rows.innerHTML='<div class="empty-state" style="padding:24px 0">Noch keine Wörter gesammelt.</div>';
+    count.textContent=''; return;
+  }
+  const sorted=[...items].sort((a,b)=>(a.word||'').localeCompare(b.word||'','de',{sensitivity:'base'}));
+  sorted.forEach(item=>{
+    const div=document.createElement('div'); div.className='dict-row';
+    const w=document.createElement('div'); w.className='dict-word'; w.textContent=item.word;
+    const ar=document.createElement('div'); ar.className='dict-arrow'; ar.textContent='→';
+    const m=document.createElement('div'); m.className='dict-meaning'; m.textContent=item.meaning||'';
+    const del=document.createElement('button'); del.className='del-btn';
+    del.innerHTML='<svg class="icon" style="width:16px;height:16px" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>';
+    del.onclick=()=>deleteDictEntry(kid,item.id);
+    div.appendChild(w); div.appendChild(ar); div.appendChild(m); div.appendChild(del);
+    rows.appendChild(div);
+  });
+  count.textContent = items.length===1 ? '1 Wort' : items.length+' Wörter';
+}
+
+KIDS.forEach(kid=>{
+  fbListen('dictionary/'+kid, data=>{
+    dictItems[kid] = data ? Object.entries(data).map(([id,v])=>({id,...v})) : [];
+    renderDict(kid);
+  });
+  fbListen('kids/'+kid+'/name', name=>{
+    const el=document.getElementById('dict-name-'+kid);
+    if(el && el!==document.activeElement) el.value = name || '';
+    kidNames[kid] = name || '';
+    renderMsControls();
+    renderMilestones(msItems);
+  });
+});
+renderMsControls();
+
+window.scheduleKidName = function(kid) {
+  clearTimeout(kidNameTimers[kid]);
+  kidNameTimers[kid]=setTimeout(()=>{
+    fbSet('kids/'+kid+'/name', document.getElementById('dict-name-'+kid).value.trim());
+  },800);
+};
+
+window.addDictEntry = async function(kid) {
+  const wEl=document.getElementById('dict-word-'+kid), mEl=document.getElementById('dict-meaning-'+kid);
+  const word=wEl.value.trim(), meaning=mEl.value.trim();
+  if(!word){ toast('Bitte das Wort des Kindes eintragen'); wEl.focus(); return; }
+  if(!meaning){ toast('Bitte noch die Bedeutung ergänzen'); mEl.focus(); return; }
+  wEl.value=''; mEl.value=''; wEl.focus();
+  if(!db){ dictItems[kid].push({id:Date.now().toString(),word,meaning}); renderDict(kid); return; }
+  await push(ref(db,'dictionary/'+kid),{word,meaning});
+  toast('✓ Eingetragen');
+};
+
+async function deleteDictEntry(kid,id) {
+  if(!db){ dictItems[kid]=dictItems[kid].filter(i=>i.id!==id); renderDict(kid); return; }
+  await remove(ref(db,'dictionary/'+kid+'/'+id));
+}
 
 // ── Archive ──────────────────────────────────────────────────
 async function loadArchive() {
@@ -769,6 +1316,95 @@ window.showArchiveList=function(){
   document.getElementById('archive-detail-view').style.display='none';
 };
 
+// ── Archiv-Suche ─────────────────────────────────────────────
+const weekCache = {};
+let searchTimer = null;
+
+async function loadAllWeeks() {
+  const idx = await fbGet('archive-index') || [];
+  const missing = idx.filter(k=>!(k in weekCache));
+  await Promise.all(missing.map(async k=>{ weekCache[k] = await fbGet(k) || {}; }));
+  return idx;
+}
+
+window.scheduleArchiveSearch = function() {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(runArchiveSearch, 350);
+};
+
+async function runArchiveSearch() {
+  const q = document.getElementById('archive-search').value.trim().toLowerCase();
+  const out = document.getElementById('archive-search-results');
+  const list = document.getElementById('archive-list');
+  if(q.length < 2){
+    out.style.display='none'; out.innerHTML=''; list.style.display='flex'; return;
+  }
+  out.style.display='block'; list.style.display='none';
+  out.innerHTML='<div style="color:var(--muted);font-style:italic;padding:10px 0">Suche…</div>';
+
+  const idx = await loadAllWeeks();
+  const hits = [];
+  idx.forEach(key=>{
+    const plan = weekCache[key] || {};
+    DAYS.forEach(d=>MEALS.forEach(m=>{
+      const v = (plan[d] && plan[d][m]) || '';
+      if(v && v.toLowerCase().includes(q)) hits.push({key,day:d,meal:m,text:v});
+    }));
+  });
+  hits.sort((a,b)=>b.key.localeCompare(a.key));
+
+  out.innerHTML='';
+  if(hits.length===0){
+    out.innerHTML='<div class="empty-state">Dazu steht nichts im Archiv.</div>'; return;
+  }
+  const head=document.createElement('div');
+  head.style.cssText='color:var(--muted);font-size:.85rem;margin-bottom:10px';
+  const last = msFormatDate(hits[0].key.replace('week-',''));
+  head.textContent = `${hits.length} ${hits.length===1?'Treffer':'Treffer'} · zuletzt in der Woche ab ${last}`;
+  out.appendChild(head);
+
+  const wrap=document.createElement('div');
+  wrap.style.cssText='display:flex;flex-direction:column;gap:8px';
+  hits.forEach(h=>{
+    const div=document.createElement('div'); div.className='search-hit';
+    const dish=document.createElement('div'); dish.className='dish'; dish.textContent=h.text;
+    const where=document.createElement('div'); where.className='where';
+    where.textContent=`${h.day}, ${h.meal} — Woche ${getWeekLabel(h.key)}`;
+    div.appendChild(dish); div.appendChild(where);
+    div.onclick=()=>showArchiveDetail(h.key);
+    wrap.appendChild(div);
+  });
+  out.appendChild(wrap);
+}
+
+window.clearArchiveSearch = function() {
+  document.getElementById('archive-search').value='';
+  runArchiveSearch();
+};
+
+// ── Sicherung ────────────────────────────────────────────────
+window.downloadBackup = async function() {
+  toast('Sicherung wird vorbereitet…');
+  let data;
+  if(db){ data = await fbGet('/'); }
+  else {
+    data = {};
+    for(let i=0;i<localStorage.length;i++){
+      const k=localStorage.key(i);
+      if(k && k.startsWith('cache:')){ try { data[k.slice(6)] = JSON.parse(localStorage.getItem(k)); } catch(e){} }
+    }
+  }
+  if(!data){ toast('Keine Daten gefunden'); return; }
+  const stamp = new Date().toISOString().slice(0,10);
+  const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url; a.download=`familienplaner-sicherung-${stamp}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 2000);
+  toast('✓ Sicherung gespeichert');
+};
+
 // ── Tabs ─────────────────────────────────────────────────────
 window.showTab = function(id, btn) {
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
@@ -780,6 +1416,7 @@ window.showTab = function(id, btn) {
 
 // ── Init ─────────────────────────────────────────────────────
 loadWeek();
+renderPool();
 </script>
 </body>
 </html>
