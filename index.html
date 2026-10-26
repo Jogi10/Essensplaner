@@ -403,7 +403,7 @@ svg.icon { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-w
         <span class="chev">›</span><span id="pool-label">Gerichte-Sammlung</span>
       </button>
       <div class="pool-box" id="pool-box" style="display:none">
-        <div class="pool-hint">Erst ein Feld im Plan antippen, dann ein Gericht auswählen. Sortiert nach „am längsten nicht mehr gehabt“.</div>
+        <div class="pool-hint">Erst ein Feld im Plan antippen, dann ein Gericht auswählen. Alphabetisch sortiert, die Angabe daneben zeigt, wann es zuletzt dran war.</div>
         <div class="pool-chips" id="pool-chips"></div>
       </div>
     </div>
@@ -793,7 +793,7 @@ function renderPool() {
     box.innerHTML='<div style="color:var(--muted);font-style:italic;font-size:.9rem">Noch leer — sie füllt sich, sobald du Wochenpläne speicherst.</div>';
     return;
   }
-  const sorted=[...mealPool].sort((a,b)=>(a.lastUsed||'').localeCompare(b.lastUsed||''));
+  const sorted=[...mealPool].sort((a,b)=>(a.name||'').localeCompare(b.name||'','de',{sensitivity:'base'}));
   sorted.forEach(p=>{
     const chip=document.createElement('button'); chip.className='pool-chip'; chip.type='button';
     const txt=document.createElement('span'); txt.textContent=p.name;
